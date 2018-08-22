@@ -25,15 +25,17 @@ render [] = return ()
 renderFor :: String -> Expression -> [Piece] -> Render ()
 renderFor var (LiteralExpression (LitString iterable)) pieces =
     mapM_ (\char -> do
+        pushFrame
         setVar var $ LitString [char]
         render pieces
-        delVar var) iterable
+        popFrame) iterable
 
 renderFor var (LiteralExpression (LitList iterable)) pieces =
     mapM_ (\lit -> do
+        pushFrame
         setVar var lit
         render pieces
-        delVar var) iterable
+        popFrame) iterable
 
 renderFor var (ReferenceExpression ref) pieces = do
     contents <- getVar ref
@@ -41,10 +43,11 @@ renderFor var (ReferenceExpression ref) pieces = do
 
 renderFor var (ListExpression exprs) pieces =
     mapM_ (\expr -> do
+        pushFrame
         lit <- evalExpr expr
         setVar var lit
         render pieces
-        delVar var) exprs
+        popFrame) exprs
 
 renderFor var _ pieces = throwE $ RenderError "not implemented yet"
 
@@ -64,6 +67,10 @@ renderIf :: [Expression] -> [[Piece]] -> Render ()
 renderIf (expr:xs) (pieces:ys) = do
     literal <- evalExpr expr
     boolean <- literalToBool literal
-    if boolean then render pieces else renderIf xs ys
+    if boolean then do
+        pushFrame
+        render pieces
+        popFrame
+    else renderIf xs ys
 renderIf [] [] = return ()
 renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."

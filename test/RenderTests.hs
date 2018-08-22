@@ -13,7 +13,8 @@ renderForLoop :: TestTree
 renderForLoop = testGroup "Rendering for loops"
      [ renderSingleForLoop
      , renderNestedForLoop
-     , renderForLoopWithReferenceIterator]
+     , renderForLoopWithReferenceIterator
+     , renderForWithOutsideReferenceDeclaration]
 
 renderSingleForLoop :: TestTree
 renderSingleForLoop = testCase "Single for loop"
@@ -36,8 +37,15 @@ renderForLoopWithReferenceIterator = testCase "For loop with referenced iterator
      (feed "{{for $i in [['abc'],['def'],['ghi']]}}{{for $j in $i}}{-$j}}{{endfor}}{{endfor}}")
   )
 
+renderForWithOutsideReferenceDeclaration :: TestTree
+renderForWithOutsideReferenceDeclaration = testCase "For loop with referenced iterator declared in let"
+  (assertEqual "Should render valid output"
+     (Right "abcdefghi")
+     (feed "{{let $arr=[['abc'],['def'],['ghi']]}}{{for $i in $arr}}{{for $j in $i}}{-$j}}{{endfor}}{{endfor}}")
+  )
+
 renderDeclarations :: TestTree
-renderDeclarations = testGroup "Rendering for loops"
+renderDeclarations = testGroup "Rendering declarations"
      [ renderAccessToUndefinedVar
      , renderOutOfScopeAccess]
 

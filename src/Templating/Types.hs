@@ -5,21 +5,23 @@ import Text.Parsec.Expr
 
 import Data.List (intercalate)
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Writer
 
-type Renderer w s b a = ExceptT b (WriterT w (StateT s Identity)) a
 {-
     - w is an accumulator type for output
     - s is state type, for keeping track of declared variables
     - b and a are just left/right of either monad
 -}
+type Renderer w s b a = ExceptT b (WriterT w (StateT s Identity)) a
 
 type VariableLookup = M.Map String Literal
-type RenderState = VariableLookup
+type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
+type RenderState = (VariableLookup, ScopeStack)
 data RenderError = RenderError String deriving (Show)
 type Render a = Renderer String RenderState RenderError a
 
