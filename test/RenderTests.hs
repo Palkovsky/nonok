@@ -14,7 +14,8 @@ renderForLoop = testGroup "Rendering for loops"
      [ renderSingleForLoop
      , renderNestedForLoop
      , renderForLoopWithReferenceIterator
-     , renderForWithOutsideReferenceDeclaration]
+     , renderForWithOutsideReferenceDeclaration
+     , loopThroughPeopleList]
 
 renderSingleForLoop :: TestTree
 renderSingleForLoop = testCase "Single for loop"
@@ -42,6 +43,17 @@ renderForWithOutsideReferenceDeclaration = testCase "For loop with referenced it
   (assertEqual "Should render valid output"
      (Right "abcdefghi")
      (feed "{{let $arr=[['abc'],['def'],['ghi']]}}{{for $i in $arr}}{{for $j in $i}}{-$j}}{{endfor}}{{endfor}}")
+  )
+
+loopThroughPeopleList :: TestTree
+loopThroughPeopleList = testCase "Loops throug list of maps representing people"
+  (assertEqual "Should render valid output"
+     (Right "Name: andrzej Age: 18\nName: piotr Age: 20\nName: frank Age: 30\n")
+     (feed
+         "{{for $person in [{'name' : 'andrzej', 'age':18}, {'name' : 'piotr', 'age':20}, {'name':'frank', 'age':30}]}}\
+         \Name: {-$person.name}} \
+         \Age: {-$person.age}}\n\
+         \{{endfor}}")
   )
 
 renderDeclarations :: TestTree

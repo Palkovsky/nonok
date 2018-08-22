@@ -43,6 +43,7 @@ data Piece = StaticPiece String
 data Expression = LiteralExpression Literal
                 | ListExpression [Expression]
                 | ReferenceExpression String
+                | MapMemberExpression String [String]
                 deriving (Show, Eq)
 
 data Literal = LitString !String
@@ -50,6 +51,7 @@ data Literal = LitString !String
              | LitBool !Bool
              | LitDouble !Double
              | LitInteger !Integer
+             | LitMap (M.Map String Literal)
              | LitEmpty
              deriving (Eq)
 
@@ -59,4 +61,6 @@ instance Show Literal where
     show (LitBool b) = if b then "true" else "false"
     show (LitDouble n) = show n
     show (LitInteger n) = show n
+    show (LitMap m) = "{" ++ (intercalate ", "  $
+         map (\(key, val) -> "\"" ++ key ++ "\" : " ++ (show val)) $ M.toList m) ++ "}"
     show LitEmpty = ""

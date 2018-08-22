@@ -96,3 +96,20 @@ evalExpr :: Expression -> Render Literal
 evalExpr (LiteralExpression lit) = return lit
 evalExpr (ReferenceExpression var) = do {lit <- getVar var; return lit}
 evalExpr (ListExpression list) = do {literals <- mapM evalExpr list; return $ LitList literals}
+evalExpr (MapMemberExpression var keys) = do
+    lMap <- getVar var
+    parseNext lMap keys
+    where
+        parseNext m [] = return m
+        parseNext lMap [key] = do
+            case lMap of
+                (LitMap m) -> do
+                   content <- throwNothing (M.lookup key m) $ RenderError $ "Map " ++ var ++ " doesn't have this member."
+                   return content
+                _ -> throwE $ RenderError "Tried to access field of non-map structure."
+        parseNext lMap (key:rest) = do
+            case lMap of
+                (LitMap m) -> do
+                    content <- throwNothing (M.lookup key m) $ RenderError $ "Map " ++ var ++ " doesn't have this member."
+                    parseNext content rest
+                _ -> throwE $ RenderError "Tried to access field of non-map structure."

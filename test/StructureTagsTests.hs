@@ -8,6 +8,8 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
+import qualified Data.Map.Strict as M
+
 {-
   ------------------------- FOR LOOPS
 -}
@@ -196,7 +198,7 @@ pathInclude = testCase "Path include"
   ------------------------- CALL TAG
 -}
 callTag :: TestTree
-callTag = testGroup "Call tag" [callAfterLet, callInFor]
+callTag = testGroup "Call tag" [callAfterLet, callInFor, callForMapMember]
 
 callInFor :: TestTree
 callInFor = testCase "Call in for"
@@ -218,6 +220,18 @@ callAfterLet = testCase "Call after let"
             , StaticPiece " I'm ", CallPiece (ReferenceExpression "i"), StaticPiece " years old. "])
      (parseAll <^> "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
   )
+
+callForMapMember :: TestTree
+callForMapMember = testCase "Call for map member"
+  (assertEqual "Should be parsed to valid AST"
+     (Right
+         [ Decl [("m", LiteralExpression $ LitMap $ M.fromList
+             [("age", LitInteger 21), ("name", LitString "dawid"), ("pet", LitMap $ M.fromList[("name", LitString "Azor")])])]
+         , StaticPiece " "
+         , CallPiece (MapMemberExpression "m" ["pet","name"])])
+     (parseAll <^> "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")
+  )
+
 
 {-
   ------------------------- COMMENTS

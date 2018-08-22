@@ -3,6 +3,7 @@
 module Templating.Parser where
 
 import qualified Data.Text as T
+import qualified Data.Map.Strict as M
 
 import Text.Parsec
 import Text.Parsec.Expr
@@ -25,6 +26,9 @@ purify input = foldr (++) [] $ map (T.unpack . T.strip . T.pack) $ lines input
 -- | Conusme parser but igonre result
 void :: Parser a -> Parser ()
 void p = p >> return ()
+
+dot :: Parser Char
+dot = char '.'
 
 spaces1 :: Parser ()
 spaces1 = void $ many1 space
@@ -82,8 +86,8 @@ parseStringContents esc = between (char esc) (char esc) (many chars)
           escapedChar code replacement = char code >> return replacement
 
 parseExpr :: Parser Expression
-parseExpr = try parseRefExpr <|> try parseDouble <|> try parseInteger <|>
-            try parseBool <|> try parseString <|> try parseList
+parseExpr = try parseMapMemberExpr <|> try parseRefExpr <|> try parseDouble <|> try parseInteger <|>
+            try parseBool <|> try parseString <|> try parseMap <|> try parseList
     where
         parseRefExpr = do
             var <- parseVariable
@@ -99,6 +103,19 @@ parseExpr = try parseRefExpr <|> try parseDouble <|> try parseInteger <|>
         parseList = do
             list <- between (char '[') (char ']') (sepBy parseExpr $ spaces >> char ',' >> spaces)
             return $ ListExpression list
+        parseMapPair = do
+            label <- ((try $ parseStringContents '\'') <|> (try $ parseStringContents '\"'))
+            spaces >> char ':' >> spaces
+            expr <- parseExpr
+            case expr of {LiteralExpression lit -> return (label, lit); _ -> unexpected "Not literal."}
+        parseMap = do
+            list <- between (char '{') (char '}') (sepBy parseMapPair $ spaces >> char ',' >> spaces)
+            return $ LiteralExpression $ LitMap $ M.fromList list
+        parseMapMemberExpr = do
+            var <- parseVariable
+            dot
+            keys <- sepBy wordString dot
+            return $ MapMemberExpression var keys
 
 parseFor :: Parser Piece
 parseFor = do
