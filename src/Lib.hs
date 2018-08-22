@@ -10,10 +10,10 @@ import Templating.Render as Lib
 entrypoint :: IO ()
 entrypoint = putStrLn "someFunc"
 
-feed :: String -> IO ()
-feed str = do
+feed :: String -> Either String String
+feed str =
     case parseAll <^> str of
-        Left err  -> putStrLn $ show err
+        Left err  -> Left $ show err
         Right ast -> do
-            (e, rendered) <- runRenderer initialRenderState $ render ast
-            putStrLn rendered
+            let (e, rendered) = runRenderer initialRenderState $ render ast
+            case e of {Left err -> Left $ show err; Right _ -> Right rendered}

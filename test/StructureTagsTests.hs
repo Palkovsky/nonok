@@ -1,5 +1,5 @@
 module StructureTagsTests
-   (forLoops, ifStatements, declarations, includes, comments, raw)
+   (forLoops, ifStatements, declarations, includes, callTag, comments, raw)
    where
 
 import Lib
@@ -22,7 +22,7 @@ forLoops = testGroup "For loops"
 singleForLoop :: TestTree
 singleForLoop = testCase "Simple for without nesting"
    (assertEqual "Should parse simple for loop to valid AST"
-      (Right [ForPiece "i" (LiteralExpression (LitString "xxx")) [StaticPiece "static"]])
+      (Right [ForPiece "i" (LiteralExpression (LitString "xxx")) [StaticPiece " static "]])
       (parseAll <^> "{{for $i in 'xxx'}} static {{endfor}}"))
 
 twoNestedForLoops :: TestTree
@@ -30,7 +30,7 @@ twoNestedForLoops = testCase "Two nested for loops"
    (assertEqual "Should parse two nested for loop to valid AST"
       (Right
           [ForPiece "i" (LiteralExpression (LitString "xxx"))
-             [ForPiece "j" (LiteralExpression (LitString "yyy")) []]
+             [StaticPiece " ", ForPiece "j" (LiteralExpression (LitString "yyy")) [], StaticPiece " "]
           ])
       (parseAll <^> "{{for $i in 'xxx'}} {{for $j in 'yyy'}}{{endfor}} {{endfor}}"))
 
@@ -63,7 +63,7 @@ ifStatements = testGroup "If statements"
 ifWithoutElifsAndElse :: TestTree
 ifWithoutElifsAndElse = testCase "Basic if without elifs and else"
    (assertEqual "Should parse simple if statement to valid AST"
-      (Right [IfPiece [LiteralExpression (LitString "expr")] [[StaticPiece "wololo"]]])
+      (Right [IfPiece [LiteralExpression (LitString "expr")] [[StaticPiece " wololo"]]])
       (parseAll <^> "{{if   'expr'}} wololo{{endif}}"))
 
 ifWithElse :: TestTree
@@ -71,7 +71,7 @@ ifWithElse = testCase "Basic if statement with else"
    (assertEqual "Should parse if with else to valid AST"
       (Right [
            IfPiece [LiteralExpression (LitString "expr"),LiteralExpression (LitBool True)]
-           [ [StaticPiece "wololo"]
+           [ [StaticPiece " wololo"]
            , [ForPiece "i" (LiteralExpression (LitString "ppp")) [StaticPiece "wnetrze"]]
            ]])
       (parseAll <^> "{{if   'expr'}} wololo{{else}}{{for $i in 'ppp'}}wnetrze{{endfor}}{{endif}}"))
@@ -85,10 +85,10 @@ ifWithMultipleElifs = testCase "If statement with more than one elif"
                    , LiteralExpression (LitString "expr2")
                    , LiteralExpression (LitString "expr3")
                    , LiteralExpression (LitBool True)]
-                   [ [StaticPiece "first block"]
-                   , [StaticPiece "second"]
-                   , [StaticPiece "third"]
-                   , [StaticPiece "else"]]])
+                   [ [StaticPiece " first block "]
+                   , [StaticPiece " second "]
+                   , [StaticPiece " third "]
+                   , [StaticPiece " else "]]])
       (parseAll <^> "{{if 'expr1'}} first block {{elif 'expr2'}} second {{elif 'expr3'}} third {{else}} else {{endif}}"))
 
 
@@ -111,22 +111,22 @@ multipleNestedIfs = testCase "If statement with more than one elif"
                       [ LiteralExpression (LitString "expr2-nest")
                       , LiteralExpression (LitString "expr2-nest-2")
                       , LiteralExpression (LitString "expr2-nest-3")]
-                      [[StaticPiece "one"],[StaticPiece ""],[StaticPiece "three"]]
+                      [[StaticPiece " one "],[StaticPiece ""],[StaticPiece " three "]]
                   ]
                 , [StaticPiece "else"]
               ]
           ])
-      (parseAll <^> "{{if 'expr1'}}\n\
-          \  {{if 'expr1-nest'}}\n\
-          \      {{for $i in 'wolllo'}}\n\
-          \          {{let $j='xxx'}}\n\
-          \          nested for\n\
-          \      {{endfor}}\n\
-          \  {{endif}}\n\
-          \{{elif 'expr2'}}\n\
-          \  {{if 'expr2-nest'}} one {{elif 'expr2-nest-2'}}{{elif 'expr2-nest-3'}} three {{endif}}\n\
-          \{{else}}\n\
-          \  else\n\
+      (parseAll <^> "{{if 'expr1'}}\
+          \{{if 'expr1-nest'}}\
+          \{{for $i in 'wolllo'}}\
+          \{{let $j='xxx'}}\
+          \nested for\
+          \{{endfor}}\
+          \{{endif}}\
+          \{{elif 'expr2'}}\
+          \{{if 'expr2-nest'}} one {{elif 'expr2-nest-2'}}{{elif 'expr2-nest-3'}} three {{endif}}\
+          \{{else}}\
+          \else\
           \{{endif}}"))
 
 
@@ -152,7 +152,7 @@ declarations = testGroup "Declarations" [singleDeclaration, multipleDeclaration,
 singleDeclaration :: TestTree
 singleDeclaration = testCase "Single declaration"
    (assertEqual "Should parse simple declaration to valid AST"
-      (Right [StaticPiece "warszawa",Decl [("name",LiteralExpression (LitString "dawid"))],StaticPiece "legia"])
+      (Right [StaticPiece "warszawa ",Decl [("name",LiteralExpression (LitString "dawid"))],StaticPiece " legia"])
       (parseAll <^> "warszawa {{let        $name='dawid'}} legia")
    )
 
@@ -162,7 +162,7 @@ multipleDeclaration = testCase "Multiple declaration"
    (assertEqual "Should parse multiple declaration to valid AST"
       (Right [ Decl [("name",LiteralExpression (LitString "dawid")),("lastname",LiteralExpression (LitString "Palkovksy"))]
              , StaticPiece "staticcontent"])
-      (parseAll <^> "  {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent")
+      (parseAll <^> "{{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent")
    )
 
 noDollarSignDeclaration :: TestTree
@@ -181,15 +181,42 @@ includes = testGroup "Includes" [referenceInclude, pathInclude]
 referenceInclude :: TestTree
 referenceInclude = testCase "Reference include"
    (assertEqual "Should parse include tag"
-      (Right [IncludeRefPiece "k", StaticPiece "andrzej"])
+      (Right [StaticPiece " ", IncludeRefPiece "k", StaticPiece " andrzej  "])
       (parseAll <^> " {{include $k}} andrzej  ")
    )
 
 pathInclude :: TestTree
 pathInclude = testCase "Path include"
   (assertEqual "Should parse include tag"
-     (Right [IncludePathPiece "folder/file.html", StaticPiece "andrzej"])
+     (Right [StaticPiece " ", IncludePathPiece "folder/file.html", StaticPiece " andrzej  "])
      (parseAll <^> " {{include 'folder/file.html'}} andrzej  ")
+  )
+
+{-
+  ------------------------- CALL TAG
+-}
+callTag :: TestTree
+callTag = testGroup "Call tag" [callAfterLet, callInFor]
+
+callInFor :: TestTree
+callInFor = testCase "Call in for"
+   (assertEqual "Should be parsed to valid AST"
+      (Right [
+          ForPiece "i"
+              (ListExpression [ LiteralExpression $ LitInteger 1
+                              , LiteralExpression $ LitInteger 2
+                              , LiteralExpression $ LitInteger 3])
+              [StaticPiece " ", CallPiece (ReferenceExpression "i"), StaticPiece " "]])
+      (parseAll <^> "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
+   )
+
+
+callAfterLet :: TestTree
+callAfterLet = testCase "Call after let"
+  (assertEqual "Should be parsed to valid AST"
+     (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
+            , StaticPiece " I'm ", CallPiece (ReferenceExpression "i"), StaticPiece " years old. "])
+     (parseAll <^> "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
   )
 
 {-
@@ -202,7 +229,7 @@ simpleComment :: TestTree
 simpleComment = testCase "Simple comment"
    (assertEqual "Should ignore contents of comment tag"
       (Right [CommentPiece])
-      (parseAll <^> " {{comment}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endcomment}}")
+      (parseAll <^> "{{comment}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endcomment}}")
    )
 
 {-
@@ -215,5 +242,5 @@ rawWithStructuralTagsInside :: TestTree
 rawWithStructuralTagsInside = testCase "Raw tag with structural tags inside"
    (assertEqual "Should treat structural tags as static content"
       (Right [RawPiece " {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent "])
-      (parseAll <^> " {{raw}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endraw}}")
+      (parseAll <^> "{{raw}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endraw}}")
    )

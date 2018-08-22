@@ -10,10 +10,13 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.Writer
 import Control.Monad.Trans.Class (lift)
 
-runRenderer :: s -> Renderer w s b a -> IO (Either b a, w)
-runRenderer state r = do
-    ((result, finalWriter), finalState) <- (runStateT. runWriterT . runExceptT) r state
-    return (result, finalWriter)
+runRenderer :: s -> Renderer w s b a -> (Either b a, w)
+runRenderer state r =
+    let
+        identity = (runStateT . runWriterT . runExceptT) r state
+        ((result, finalWriter), finalState) = runIdentity identity
+    in (result, finalWriter)
+
 
 initialRenderState :: RenderState
 initialRenderState = M.empty

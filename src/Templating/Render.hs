@@ -29,9 +29,22 @@ renderFor var (LiteralExpression (LitString iterable)) pieces =
         render pieces
         delVar var) iterable
 
+renderFor var (LiteralExpression (LitList iterable)) pieces =
+    mapM_ (\lit -> do
+        setVar var lit
+        render pieces
+        delVar var) iterable
+
 renderFor var (ReferenceExpression ref) pieces = do
     contents <- getVar ref
     renderFor var (LiteralExpression contents) pieces
+
+renderFor var (ListExpression exprs) pieces =
+    mapM_ (\expr -> do
+        lit <- evalExpr expr
+        setVar var lit
+        render pieces
+        delVar var) exprs
 
 renderFor var _ pieces = throwE $ RenderError "not implemented yet"
 
@@ -45,7 +58,7 @@ renderDecl [] = return ()
 renderCall :: Expression -> Render ()
 renderCall expr = do
    lit <- evalExpr expr
-   writeString $ " " ++ (show lit) ++ " "
+   writeString $ show lit
 
 renderIf :: [Expression] -> [[Piece]] -> Render ()
 renderIf (expr:xs) (pieces:ys) = do

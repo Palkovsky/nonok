@@ -11,7 +11,7 @@ import Control.Monad.Trans.State
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Writer
 
-type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
+type Renderer w s b a = ExceptT b (WriterT w (StateT s Identity)) a
 {-
     - w is an accumulator type for output
     - s is state type, for keeping track of declared variables

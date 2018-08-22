@@ -16,7 +16,7 @@ import Templating.Types
 
 
 (<^>) :: Parser a -> String -> Either ParseError a
-p <^> t = parse p "" $ purify t
+p <^> t = parse p "" t
 
 -- | Strips every line
 purify :: String -> String
@@ -121,7 +121,7 @@ parseIf = do
                   (try $ void $ lookAhead $ tag $ string "endif")
        elifParser = do
            exp <- tagStart >> spaces >> string "elif" >> spaces1 >> parseExpr
-           spaces>>tagEnd
+           spaces >> tagEnd
            return exp
        elseParser = do
            tag $ string "else"
@@ -191,7 +191,7 @@ parseRaw = do
 -- | Tag which evaluates and prints expression
 parseCall :: Parser Piece
 parseCall = do
-    expr <- spaces >> exprTag >> spaces >> parseExpr
+    expr <- exprTag >> spaces >> parseExpr
     spaces >> tagEnd
     return $ CallPiece expr
 
@@ -203,11 +203,11 @@ static = do
       _ -> do
          c <- anyChar
          s <- manyTill anyChar (tryTag <|> eof)
-         let str = (T.unpack . T.strip . T.pack) $ c:s
+         let str = {-(T.unpack . T.strip . T.pack) $-} c:s
          return $ StaticPiece str
   where
       tryTag = (try $ void $ lookAhead tagStart) <|>
-               (try $ void $ lookAhead $ string "{-") <|>
+               (try $ void $ lookAhead $ exprTag) <|>
                (try $ void $ lookAhead tagEnd)
 
 nonStatic :: Parser Piece
