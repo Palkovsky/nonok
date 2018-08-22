@@ -1,12 +1,24 @@
 module Templating.Render where
 
 import Templating.Types
+import Templating.Parser (generateAST)
 import Templating.RenderHelpers
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Writer
+import Control.Monad.IO.Class (liftIO)
+
+import System.Directory
+
+feed :: String -> IO (Either String String)
+feed str =
+    case generateAST str of
+        Left err  -> return $ Left $ show err
+        Right ast -> do
+            (e, rendered) <- runRenderer initialRenderState $ render ast
+            return $ case e of {Left err -> Left $ show err; Right _ -> Right rendered}
 
 render :: [Piece] -> Render ()
 render (piece:xs) = do
@@ -16,6 +28,8 @@ render (piece:xs) = do
         (IfPiece exprs piecesList) -> renderIf exprs piecesList
         (CallPiece expr) -> renderCall expr
         (Decl decs) -> renderDecl decs
+        (IncludeRefPiece var) -> renderIncludeRef var
+        (IncludePathPiece path) -> renderIncludePath path
         _  -> return ()
     render xs
 
@@ -74,3 +88,22 @@ renderIf (expr:xs) (pieces:ys) = do
     else renderIf xs ys
 renderIf [] [] = return ()
 renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
+
+renderIncludeRef :: String -> Render ()
+renderIncludeRef var = do
+    lit <- getVar var
+    let str = show $ lit
+    result <- liftIO $ feed str
+    case result of
+        (Left err) -> throwE $ RenderError err
+        (Right rendered) -> writeString rendered
+
+renderIncludePath :: String -> Render ()
+renderIncludePath path = do
+    exists <- liftIO $ doesFileExist path
+    throwUnless exists $ RenderError "Unexistent file specified in include."
+    contents <- liftIO $ readFile path
+    result <- liftIO $ feed contents
+    case result of
+        (Left err) -> throwE $ RenderError err
+        (Right rendered) -> writeString rendered

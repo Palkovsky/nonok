@@ -15,9 +15,8 @@ import Control.Monad (filterM)
 
 import Templating.Types
 
-
-(<^>) :: Parser a -> String -> Either ParseError a
-p <^> t = parse p "" t
+generateAST :: String -> Either ParseError [Piece]
+generateAST str = parse (parseBlock eof) "" str
 
 -- | Strips every line
 purify :: String -> String
@@ -241,6 +240,3 @@ parseBlock :: Parser a -> Parser [Piece]
 parseBlock end = do
     pieces <- manyTill (nonStatic <|> static) end
     filterM (\x -> return $ x /= (StaticPiece "")) pieces
-
-parseAll :: Parser [Piece]
-parseAll = parseBlock eof

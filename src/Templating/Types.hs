@@ -12,12 +12,13 @@ import Control.Monad.Trans.State
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Writer
 
+
 {-
     - w is an accumulator type for output
     - s is state type, for keeping track of declared variables
     - b and a are just left/right of either monad
 -}
-type Renderer w s b a = ExceptT b (WriterT w (StateT s Identity)) a
+type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
 
 type VariableLookup = M.Map String Literal
 type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
@@ -30,7 +31,7 @@ type Parser a = ParsecT String () Identity a
 data Piece = StaticPiece String
            | CommentPiece
            | RawPiece String
-           | IncludeRefPiece String
+           | IncludeRefPiece String -- Important: inclue have separate scope stack and local variables
            | IncludePathPiece String
            | BlockPiece String [Piece]
            | ForPiece String Expression [Piece] -- name of var, list expression, inside of block
