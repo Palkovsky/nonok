@@ -67,6 +67,9 @@ parseReference :: Parser Reference
 parseReference = (try parseLocalVariable >>= (return . RefLocal)) <|>
                  (try parseGlobalVariable >>= (return . RefGlobal))
 
+parseRefExpression :: Parser Expression
+parseRefExpression = parseReference >>= (return . LiteralExpression . LitRef)
+
 -- | Parse content between `tagStart` and `tagEnd`
 tag :: Parser a -> Parser a
 tag p = between (tagStart >> spaces) (spaces >> tagEnd) p <?> "Tag"
@@ -93,9 +96,23 @@ parseStringContents esc = between (char esc) (char esc) (many chars)
           replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '\'', '/']
           escapedChar code replacement = char code >> return replacement
 
+
+parseMap :: Parser Expression
+parseMap = do
+    list <- between (char '{') (char '}') (sepBy parseMapPair $ spaces >> char ',' >> spaces)
+    return $ MapExpression $ M.fromList list
+    where
+      parseMapPair = do
+          spaces
+          label <- ((try $ parseStringContents '\'') <|> (try $ parseStringContents '\"'))
+          spaces >> char ':' >> spaces
+          expr <- parseExpr
+          spaces
+          return (label, expr)
+
 parseExpr :: Parser Expression
 parseExpr = try parseMapMemberExpr <|>
-            try parseRef <|>
+            try parseRefExpression <|>
             try parseDouble <|>
             try parseInteger <|>
             try parseBool <|>
@@ -103,7 +120,6 @@ parseExpr = try parseMapMemberExpr <|>
             try parseMap <|>
             try parseList
     where
-        parseRef = parseReference >>= (return . LiteralExpression . LitRef)
         parseInteger = parseInt >>= (return . LiteralExpression . LitInteger)
         parseDouble = parseFloat >>= (return . LiteralExpression . LitDouble)
         parseBool = do
@@ -115,14 +131,7 @@ parseExpr = try parseMapMemberExpr <|>
         parseList = do
             list <- between (char '[') (char ']') (sepBy parseExpr $ spaces >> char ',' >> spaces)
             return $ ListExpression list
-        parseMapPair = do
-            label <- ((try $ parseStringContents '\'') <|> (try $ parseStringContents '\"'))
-            spaces >> char ':' >> spaces
-            expr <- parseExpr
-            return (label, expr) --case expr of {LiteralExpression lit -> return (label, lit); _ -> unexpected "Not literal."}
-        parseMap = do
-            list <- between (char '{') (char '}') (sepBy parseMapPair $ spaces >> char ',' >> spaces)
-            return $ MapExpression $ M.fromList list
+
         parseMapMemberExpr = do
             ref <- parseReference
             dot
@@ -194,16 +203,20 @@ parseIncludeRef :: Parser Piece
 parseIncludeRef = do
     tagStart >> spaces >> string "include" >> spaces1
     var <- parseReference
+    newGlobals <- optionMaybe $ (try (spaces >> char ',' >> spaces >> parseMap)) <|>
+                                (try (spaces >> char ',' >> spaces >> parseRefExpression))
     spaces >> tagEnd
-    return $ IncludeRefPiece var
+    return $ IncludeRefPiece var newGlobals
 
 parseIncludePath :: Parser Piece
 parseIncludePath = do
     tagStart >> spaces >> string "include" >> spaces1
     path <- (try $ between (char '\'')  (char '\'') pathString) <|>
                   (between (char '\"')  (char '\"') pathString)
+    newGlobals <- optionMaybe $ (try (spaces >> char ',' >> spaces >> parseMap)) <|>
+                                (try (spaces >> char ',' >> spaces >> parseRefExpression))
     spaces >> tagEnd
-    return $ IncludePathPiece path
+    return $ IncludePathPiece path newGlobals
 
 parseComment :: Parser Piece
 parseComment = do
@@ -232,8 +245,7 @@ static = do
       _ -> do
          c <- anyChar
          s <- manyTill anyChar (tryTag <|> eof)
-         let str = {-(T.unpack . T.strip . T.pack) $-} c:s
-         return $ StaticPiece str
+         return $ StaticPiece $ c:s
   where
       tryTag = (try $ void $ lookAhead tagStart) <|>
                (try $ void $ lookAhead $ exprTag) <|>

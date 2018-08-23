@@ -38,10 +38,10 @@ type Parser a = ParsecT String () Identity a
 data Piece = StaticPiece String
            | CommentPiece
            | RawPiece String
-           | IncludeRefPiece Reference -- Important: inclue have separate scope stack and local variables
-           | IncludePathPiece String -- TODO: optional include field with extra globals passed
+           | IncludeRefPiece Reference (Maybe Expression)-- Important: inclue have separate scope stack and local variables
+           | IncludePathPiece String (Maybe Expression)
            | BlockPiece String [Piece]
-           | ForPiece String Expression [Piece] -- name of var, list expression, inside of block
+           | ForPiece String Expression [Piece] -- name of var, list expression, contents of block
            | IfPiece [Expression] [[Piece]]
            | CallPiece Expression
            | Decl [(String, Expression)]
@@ -78,4 +78,4 @@ instance Show Literal where
 
 instance Show PrintableExpression where
     show (PrintableExpression (LiteralExpression lit)) = show lit
-    show x = show x 
+    show x = show x

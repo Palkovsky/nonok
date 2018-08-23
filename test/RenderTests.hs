@@ -83,7 +83,9 @@ renderIncludes = testGroup "Rendering includes"
      , renderIncludeFromVarWithError
      , renderIncludeFromPathWithError
      , renderIncludeLocalInheritanceError
-     , renderIncludeGlobalInheritance]
+     , renderIncludeGlobalInheritance
+     , renderIncludeRefWithOverwrittenGlobal
+     , renderIncludePathWithOverwrittenGlobal]
 
 renderIncludeFromVar :: TestTree
 renderIncludeFromVar = testCase "Include from var"
@@ -128,3 +130,21 @@ renderIncludeFromPathWithError = testCase "Include from path with error"
     (return left)
     (feed M.empty "{{include 'test/static/include_test_error.txt'}}")
  )
+
+renderIncludeRefWithOverwrittenGlobal :: TestTree
+renderIncludeRefWithOverwrittenGlobal = testCase "Overriding old global in ref include"
+ (assertEqualIO "Should render valid output"
+    (return $ Right "dawid inner: andrzej")
+    (feed (M.fromList [("person", MapExpression $ M.fromList
+        [("name", LiteralExpression $ LitString "andrzej")])])
+     "{{let $i='{-@person.name}}'}}{{include $i, {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
+ )
+
+renderIncludePathWithOverwrittenGlobal :: TestTree
+renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path include"
+    (assertEqualIO "Should render valid output"
+        (return $ Right "dawid\n inner: andrzej")
+        (feed (M.fromList [("person", MapExpression $ M.fromList
+            [("name", LiteralExpression $ LitString "andrzej")])])
+        "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
+    )

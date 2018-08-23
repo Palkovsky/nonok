@@ -12,6 +12,10 @@ import Control.Monad.IO.Class (liftIO)
 
 import System.Directory
 
+import qualified Data.Map.Strict as M
+import Data.Map.Merge.Strict (merge, preserveMissing, zipWithMatched)
+
+
 feed :: VariableLookup -> String -> IO (Either String String)
 feed globals str =
     case generateAST str of
@@ -28,8 +32,8 @@ render (piece:xs) = do
         (IfPiece exprs piecesList) -> renderIf exprs piecesList
         (CallPiece expr) -> renderCall expr
         (Decl decs) -> renderDecl decs
-        (IncludeRefPiece ref) -> renderIncludeRef ref
-        (IncludePathPiece path) -> renderIncludePath path
+        (IncludeRefPiece ref globals) -> renderIncludeRef ref globals
+        (IncludePathPiece path globals) -> renderIncludePath path globals
         _  -> return ()
     render xs
 
@@ -82,23 +86,32 @@ renderIf (expr:xs) (pieces:ys) = do
 renderIf [] [] = return ()
 renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
 
-renderIncludeRef :: Reference -> Render ()
-renderIncludeRef ref = do
+mergedGlobals :: Maybe Expression -> Render (M.Map String Expression)
+mergedGlobals maybeMapExpr = do
+    state <- getState
+    globalsExpr <- maybe (return $ MapExpression M.empty) evalExpr maybeMapExpr
+    globalsMap <- getMapFromExpr (RenderError "Not map passed as new globals.") globalsExpr
+    return $ merge preserveMissing preserveMissing (zipWithMatched (\_ _ x ->  x)) (globalVars state) globalsMap 
+
+renderIncludeRef :: Reference -> Maybe Expression -> Render ()
+renderIncludeRef ref maybeMapExpr = do
+    newGlobals <- mergedGlobals maybeMapExpr
     expr <- evalLiteral $ LitRef ref
     let str = show $ PrintableExpression expr
     state <- getState
-    result <- liftIO $ feed (globalVars state) str
+    result <- liftIO $ feed newGlobals str
     case result of
         (Left err) -> throwE $ RenderError err
         (Right rendered) -> writeString rendered
 
-renderIncludePath :: String -> Render ()
-renderIncludePath path = do
+renderIncludePath :: String -> Maybe Expression -> Render ()
+renderIncludePath path maybeMapExpr = do
+    newGlobals <- mergedGlobals maybeMapExpr
     exists <- liftIO $ doesFileExist path
     throwUnless exists $ RenderError "Unexistent file specified in include."
     contents <- liftIO $ readFile path
     state <- getState
-    result <- liftIO $ feed (globalVars state) contents
+    result <- liftIO $ feed newGlobals contents
     case result of
         (Left err) -> throwE $ RenderError err
         (Right rendered) -> writeString rendered

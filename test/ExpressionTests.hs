@@ -21,7 +21,9 @@ people = ListExpression $ map (MapExpression . M.fromList) $
 expressions :: TestTree
 expressions = testGroup "Expressions"
      [ mapWithVariableFields
-     , mapWithGlobalVariableFields ]
+     , mapWithGlobalVariableFields
+     , includeWithMemberCallInGlobals
+     , includeWithMapByReference ]
 
 mapWithVariableFields :: TestTree
 mapWithVariableFields = testCase "Map with variable fields"
@@ -37,3 +39,19 @@ mapWithGlobalVariableFields = testCase "Map with global variable fields"
     (feed (M.fromList [("age", LiteralExpression $ LitInteger 30)])
      "{{let $age=21, $n='David', $person={'name' : $n, 'age' : @age}}}Name: {- $person.name }}, age: {- $person.age }}")
   )
+
+includeWithMemberCallInGlobals :: TestTree
+includeWithMemberCallInGlobals = testCase "Passing complicated expressions as map fields in include"
+ (assertEqualIO "Should render valid output"
+    (return $ Right "dawid")
+    (feed M.empty
+     "{{let $map={'x' : 'dawid', 'y' : 'andrzej'}, $i='{-@person.name}}'}}{{include $i, {'person' : {'name':$map.x }} }}")
+ )
+
+includeWithMapByReference :: TestTree
+includeWithMapByReference = testCase "Passing reference to map in include"
+   (assertEqualIO "Should render valid output"
+      (return $ Right "dawid")
+      (feed M.empty
+       "{{let $map=  {   'person' :{ 'name':'dawid'}}, $i='{-@person.name}}'}}{{include $i, $map }}")
+   )

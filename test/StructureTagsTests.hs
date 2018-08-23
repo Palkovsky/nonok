@@ -178,21 +178,46 @@ noDollarSignDeclaration = testCase "Declaration without dollar sign by variable 
   ------------------------- INCLUDES
 -}
 includes :: TestTree
-includes = testGroup "Includes" [referenceInclude, pathInclude]
+includes = testGroup "Includes"
+    [ referenceInclude
+    , pathInclude
+    , referenceIncludeWithNewGlobals
+    , pathIncludeWithNewGlobals]
 
 referenceInclude :: TestTree
 referenceInclude = testCase "Reference include"
    (assertEqual "Should parse include tag"
-      (Right [StaticPiece " ", IncludeRefPiece (RefLocal "k"), StaticPiece " andrzej  "])
+      (Right [StaticPiece " ", IncludeRefPiece (RefLocal "k") Nothing, StaticPiece " andrzej  "])
       (generateAST " {{include $k}} andrzej  ")
    )
 
 pathInclude :: TestTree
 pathInclude = testCase "Path include"
   (assertEqual "Should parse include tag"
-     (Right [StaticPiece " ", IncludePathPiece "folder/file.html", StaticPiece " andrzej  "])
+     (Right [StaticPiece " ", IncludePathPiece "folder/file.html" Nothing, StaticPiece " andrzej  "])
      (generateAST " {{include 'folder/file.html'}} andrzej  ")
   )
+
+referenceIncludeWithNewGlobals :: TestTree
+referenceIncludeWithNewGlobals = testCase "Reference include with new globals"
+   (assertEqual "Should parse include tag"
+      (Right
+          [IncludeRefPiece (RefLocal "k")
+              (Just $ MapExpression $ M.fromList [("name", LiteralExpression $ LitString "andrzej")])])
+      (generateAST "{{include $k , {'name' : 'andrzej'} }}")
+   )
+
+pathIncludeWithNewGlobals :: TestTree
+pathIncludeWithNewGlobals = testCase "Path include with new globals"
+  (assertEqual "Should parse include tag"
+     (Right
+         [IncludePathPiece "folder/file.html"
+             (Just $ MapExpression $ M.fromList
+                 [("person", MapExpression $ M.fromList $ [("name", LiteralExpression $ LitString "andrzej")])])]
+     )
+     (generateAST "{{include 'folder/file.html', {'person' : {'name' : 'andrzej'} } }}")
+  )
+
 
 {-
   ------------------------- CALL TAG
