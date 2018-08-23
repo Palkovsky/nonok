@@ -52,11 +52,20 @@ pathString :: Parser String
 pathString = many1 $ oneOf "_./" <|> alphaNum
 
 -- | Parse variable, which is dollar sign followed by wordString
-parseVariable :: Parser String
-parseVariable = do
-    spaces >> char '$'
+parseVariable :: Char -> Parser String
+parseVariable pref = do
+    spaces >> char pref
     e <- wordString
     return e
+
+parseLocalVariable :: Parser String
+parseGlobalVariable :: Parser String
+parseLocalVariable = parseVariable '$'
+parseGlobalVariable = parseVariable '@'
+
+parseReference :: Parser Reference
+parseReference = (try parseLocalVariable >>= (return . RefLocal)) <|>
+                 (try parseGlobalVariable >>= (return . RefGlobal))
 
 -- | Parse content between `tagStart` and `tagEnd`
 tag :: Parser a -> Parser a
@@ -85,12 +94,16 @@ parseStringContents esc = between (char esc) (char esc) (many chars)
           escapedChar code replacement = char code >> return replacement
 
 parseExpr :: Parser Expression
-parseExpr = try parseMapMemberExpr <|> try parseRefExpr <|> try parseDouble <|> try parseInteger <|>
-            try parseBool <|> try parseString <|> try parseMap <|> try parseList
+parseExpr = try parseMapMemberExpr <|>
+            try parseRef <|>
+            try parseDouble <|>
+            try parseInteger <|>
+            try parseBool <|>
+            try parseString <|>
+            try parseMap <|>
+            try parseList
     where
-        parseRefExpr = do
-            var <- parseVariable
-            return $ ReferenceExpression var
+        parseRef = parseReference >>= (return . ReferenceExpression)
         parseInteger = parseInt >>= (return . LiteralExpression . LitInteger)
         parseDouble = parseFloat >>= (return . LiteralExpression . LitDouble)
         parseBool = do
@@ -111,14 +124,14 @@ parseExpr = try parseMapMemberExpr <|> try parseRefExpr <|> try parseDouble <|> 
             list <- between (char '{') (char '}') (sepBy parseMapPair $ spaces >> char ',' >> spaces)
             return $ LiteralExpression $ LitMap $ M.fromList list
         parseMapMemberExpr = do
-            var <- parseVariable
+            ref <- parseReference
             dot
             keys <- sepBy wordString dot
-            return $ MapMemberExpression var keys
+            return $ MapMemberExpression ref keys
 
 parseFor :: Parser Piece
 parseFor = do
-    var <- tagStart >> spaces >> string "for" >> spaces1 >> parseVariable
+    var <- tagStart >> spaces >> string "for" >> spaces1 >> parseLocalVariable
     exp <- spaces1 >> string "in" >> spaces1 >> parseExpr
     spaces >> tagEnd
     blocks <- parseBlock (try $ tag $ string "endfor")
@@ -173,14 +186,14 @@ parseDecl = do
     return $ Decl decls
     where
         parseSingle = do
-            var  <- parseVariable
+            var  <- parseLocalVariable
             expr <- spaces >> char '=' >> spaces >> parseExpr
             return (var, expr)
 
 parseIncludeRef :: Parser Piece
 parseIncludeRef = do
     tagStart >> spaces >> string "include" >> spaces1
-    var <- parseVariable
+    var <- parseReference
     spaces >> tagEnd
     return $ IncludeRefPiece var
 

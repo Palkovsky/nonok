@@ -1,5 +1,5 @@
 module RenderTests
-   (renderForLoop, renderDeclarations)
+   (renderForLoop, renderDeclarations, renderIncludes)
    where
 
 import Lib
@@ -19,36 +19,36 @@ renderForLoop = testGroup "Rendering for loops"
 
 renderSingleForLoop :: TestTree
 renderSingleForLoop = testCase "Single for loop"
-   (assertEqual "Should render valid output"
-      (Right " Numer: 1  Numer: 2  Numer: 3 ")
+   (assertEqualIO  "Should render valid output"
+      (return $ Right " Numer: 1  Numer: 2  Numer: 3 ")
       (feed "{{for $i in [1,2,3]}} Numer: {- $i}} {{endfor}}")
    )
 
 renderNestedForLoop :: TestTree
 renderNestedForLoop = testCase "Two nested for loops"
-   (assertEqual "Should render valid output"
-      (Right "(1, a)(1, b)(1, c)(2, a)(2, b)(2, c)(3, a)(3, b)(3, c)")
+   (assertEqualIO "Should render valid output"
+      (return $ Right "(1, a)(1, b)(1, c)(2, a)(2, b)(2, c)(3, a)(3, b)(3, c)")
       (feed "{{for $i in [1,2,3]}}{{for $j in 'abc'}}({-$i}}, {-$j}}){{endfor}}{{endfor}}")
    )
 
 renderForLoopWithReferenceIterator :: TestTree
 renderForLoopWithReferenceIterator = testCase "For loop with referenced iterator"
-  (assertEqual "Should render valid output"
-     (Right "abcdefghi")
+  (assertEqualIO "Should render valid output"
+     (return $ Right "abcdefghi")
      (feed "{{for $i in [['abc'],['def'],['ghi']]}}{{for $j in $i}}{-$j}}{{endfor}}{{endfor}}")
   )
 
 renderForWithOutsideReferenceDeclaration :: TestTree
 renderForWithOutsideReferenceDeclaration = testCase "For loop with referenced iterator declared in let"
-  (assertEqual "Should render valid output"
-     (Right "abcdefghi")
+  (assertEqualIO "Should render valid output"
+     (return $ Right "abcdefghi")
      (feed "{{let $arr=[['abc'],['def'],['ghi']]}}{{for $i in $arr}}{{for $j in $i}}{-$j}}{{endfor}}{{endfor}}")
   )
 
 loopThroughPeopleList :: TestTree
 loopThroughPeopleList = testCase "Loops throug list of maps representing people"
-  (assertEqual "Should render valid output"
-     (Right "Name: andrzej Age: 18\nName: piotr Age: 20\nName: frank Age: 30\n")
+  (assertEqualIO "Should render valid output"
+     (return $ Right "Name: andrzej Age: 18\nName: piotr Age: 20\nName: frank Age: 30\n")
      (feed
          "{{for $person in [{'name' : 'andrzej', 'age':18}, {'name' : 'piotr', 'age':20}, {'name':'frank', 'age':30}]}}\
          \Name: {-$person.name}} \
@@ -63,14 +63,49 @@ renderDeclarations = testGroup "Rendering declarations"
 
 renderAccessToUndefinedVar :: TestTree
 renderAccessToUndefinedVar = testCase "Error out if accessed undefined var"
- (assertEither "Should error out"
-    left
+ (assertEitherIO "Should error out"
+    (return left)
     (feed "{{for $i in $k}} dawid {{endfor}}")
  )
 
 renderOutOfScopeAccess :: TestTree
 renderOutOfScopeAccess = testCase "Error out if accessed out of scope var"
-  (assertEither "Should error out"
-     left
+  (assertEitherIO "Should error out"
+     (return left)
      (feed "{{for $i in [['abc'],['def'],['ghi']]}} {{let $k=20}} {{endfor}} {- $k }}")
   )
+
+renderIncludes :: TestTree
+renderIncludes = testGroup "Rendering includes"
+     [ renderIncludeFromVar
+     , renderIncludeFromPath
+     , renderIncludeFromVarWithError
+     , renderIncludeFromPathWithError]
+
+renderIncludeFromVar :: TestTree
+renderIncludeFromVar = testCase "Include from var"
+ (assertEqualIO "Should render valid output"
+    (return $ Right "123")
+    (feed "{{let $i='{{for $i in [1,2,3]}}{-$i}}{{endfor}}'}}{{include $i}}")
+ )
+
+renderIncludeFromPath :: TestTree
+renderIncludeFromPath = testCase "Include from path"
+ (assertEqualIO "Should render valid output"
+    (return $ Right "123\n")
+    (feed "{{include 'test/include_test_correct.txt'}}")
+ )
+
+renderIncludeFromVarWithError :: TestTree
+renderIncludeFromVarWithError = testCase "Include from var with error"
+  (assertEitherIO "Should error out"
+     (return left)
+     (feed "{{let $i='{{for $i in [1,2,3]}}{-$i}}'}}{{include $i}}")
+  )
+
+renderIncludeFromPathWithError :: TestTree
+renderIncludeFromPathWithError = testCase "Include from path with error"
+ (assertEitherIO "Should error out"
+    (return left)
+    (feed "{{include 'test/include_test_error.txt'}}")
+ )

@@ -25,7 +25,7 @@ singleForLoop :: TestTree
 singleForLoop = testCase "Simple for without nesting"
    (assertEqual "Should parse simple for loop to valid AST"
       (Right [ForPiece "i" (LiteralExpression (LitString "xxx")) [StaticPiece " static "]])
-      (parseAll <^> "{{for $i in 'xxx'}} static {{endfor}}"))
+      (generateAST "{{for $i in 'xxx'}} static {{endfor}}"))
 
 twoNestedForLoops :: TestTree
 twoNestedForLoops = testCase "Two nested for loops"
@@ -34,19 +34,19 @@ twoNestedForLoops = testCase "Two nested for loops"
           [ForPiece "i" (LiteralExpression (LitString "xxx"))
              [StaticPiece " ", ForPiece "j" (LiteralExpression (LitString "yyy")) [], StaticPiece " "]
           ])
-      (parseAll <^> "{{for $i in 'xxx'}} {{for $j in 'yyy'}}{{endfor}} {{endfor}}"))
+      (generateAST "{{for $i in 'xxx'}} {{for $j in 'yyy'}}{{endfor}} {{endfor}}"))
 
 forLoopWithoutEndfor :: TestTree
 forLoopWithoutEndfor = testCase "Forloop without 'endfor'"
    (assertEither "Should return error."
       left
-      (parseAll <^> "{{for $i in 'xxx'}} {{for $j in 'yyy'}} {{endfor}}"))
+      (generateAST "{{for $i in 'xxx'}} {{for $j in 'yyy'}} {{endfor}}"))
 
 forLoopIteratorWithoutDollarSign :: TestTree
 forLoopIteratorWithoutDollarSign = testCase "Forloop with iterator without dollarsign."
    (assertEither "Should return error."
       left
-      (parseAll <^> "{{for $i in 'xxx'}} {{for j in 'yyy'}} {{endfor}} {{endfor}}"))
+      (generateAST "{{for $i in 'xxx'}} {{for j in 'yyy'}} {{endfor}} {{endfor}}"))
 
 {-
   ------------------------- IF STATEMENTS
@@ -66,7 +66,7 @@ ifWithoutElifsAndElse :: TestTree
 ifWithoutElifsAndElse = testCase "Basic if without elifs and else"
    (assertEqual "Should parse simple if statement to valid AST"
       (Right [IfPiece [LiteralExpression (LitString "expr")] [[StaticPiece " wololo"]]])
-      (parseAll <^> "{{if   'expr'}} wololo{{endif}}"))
+      (generateAST "{{if   'expr'}} wololo{{endif}}"))
 
 ifWithElse :: TestTree
 ifWithElse = testCase "Basic if statement with else"
@@ -76,7 +76,7 @@ ifWithElse = testCase "Basic if statement with else"
            [ [StaticPiece " wololo"]
            , [ForPiece "i" (LiteralExpression (LitString "ppp")) [StaticPiece "wnetrze"]]
            ]])
-      (parseAll <^> "{{if   'expr'}} wololo{{else}}{{for $i in 'ppp'}}wnetrze{{endfor}}{{endif}}"))
+      (generateAST "{{if   'expr'}} wololo{{else}}{{for $i in 'ppp'}}wnetrze{{endfor}}{{endif}}"))
 
 
 ifWithMultipleElifs :: TestTree
@@ -91,7 +91,7 @@ ifWithMultipleElifs = testCase "If statement with more than one elif"
                    , [StaticPiece " second "]
                    , [StaticPiece " third "]
                    , [StaticPiece " else "]]])
-      (parseAll <^> "{{if 'expr1'}} first block {{elif 'expr2'}} second {{elif 'expr3'}} third {{else}} else {{endif}}"))
+      (generateAST "{{if 'expr1'}} first block {{elif 'expr2'}} second {{elif 'expr3'}} third {{else}} else {{endif}}"))
 
 
 multipleNestedIfs :: TestTree
@@ -118,7 +118,7 @@ multipleNestedIfs = testCase "If statement with more than one elif"
                 , [StaticPiece "else"]
               ]
           ])
-      (parseAll <^> "{{if 'expr1'}}\
+      (generateAST "{{if 'expr1'}}\
           \{{if 'expr1-nest'}}\
           \{{for $i in 'wolllo'}}\
           \{{let $j='xxx'}}\
@@ -136,13 +136,13 @@ elifOrElseWithoutIf :: TestTree
 elifOrElseWithoutIf = testCase "Elif or else without proceeding if"
    (assertEither "Should fail"
       left
-      (parseAll <^> "{{if 'expr1'}} first block  {{endif}} {{elif 'expr2'}} second {{else}} else {{endif}}"))
+      (generateAST "{{if 'expr1'}} first block  {{endif}} {{elif 'expr2'}} second {{else}} else {{endif}}"))
 
 ifWithMutipleElses :: TestTree
 ifWithMutipleElses = testCase "If statement with more than one else"
    (assertEither "Should fail"
       left
-      (parseAll <^> "{{if 'expr1'}} first block {{else}} second {{elif 'expr3'}} third {{else}} else {{endif}}"))
+      (generateAST "{{if 'expr1'}} first block {{else}} second {{elif 'expr3'}} third {{else}} else {{endif}}"))
 
 {-
   ------------------------- DECLARATIONS
@@ -155,7 +155,7 @@ singleDeclaration :: TestTree
 singleDeclaration = testCase "Single declaration"
    (assertEqual "Should parse simple declaration to valid AST"
       (Right [StaticPiece "warszawa ",Decl [("name",LiteralExpression (LitString "dawid"))],StaticPiece " legia"])
-      (parseAll <^> "warszawa {{let        $name='dawid'}} legia")
+      (generateAST "warszawa {{let        $name='dawid'}} legia")
    )
 
 
@@ -164,14 +164,14 @@ multipleDeclaration = testCase "Multiple declaration"
    (assertEqual "Should parse multiple declaration to valid AST"
       (Right [ Decl [("name",LiteralExpression (LitString "dawid")),("lastname",LiteralExpression (LitString "Palkovksy"))]
              , StaticPiece "staticcontent"])
-      (parseAll <^> "{{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent")
+      (generateAST "{{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent")
    )
 
 noDollarSignDeclaration :: TestTree
 noDollarSignDeclaration = testCase "Declaration without dollar sign by variable name"
    (assertEither "Should error out, due to lack of dollar sign by var name"
       left
-      (parseAll <^> "static   {{let $name='dawid', lastname='Palkovksy'}}staticcontent")
+      (generateAST "static   {{let $name='dawid', lastname='Palkovksy'}}staticcontent")
   )
 
 {-
@@ -183,15 +183,15 @@ includes = testGroup "Includes" [referenceInclude, pathInclude]
 referenceInclude :: TestTree
 referenceInclude = testCase "Reference include"
    (assertEqual "Should parse include tag"
-      (Right [StaticPiece " ", IncludeRefPiece "k", StaticPiece " andrzej  "])
-      (parseAll <^> " {{include $k}} andrzej  ")
+      (Right [StaticPiece " ", IncludeRefPiece (RefLocal "k"), StaticPiece " andrzej  "])
+      (generateAST " {{include $k}} andrzej  ")
    )
 
 pathInclude :: TestTree
 pathInclude = testCase "Path include"
   (assertEqual "Should parse include tag"
      (Right [StaticPiece " ", IncludePathPiece "folder/file.html", StaticPiece " andrzej  "])
-     (parseAll <^> " {{include 'folder/file.html'}} andrzej  ")
+     (generateAST " {{include 'folder/file.html'}} andrzej  ")
   )
 
 {-
@@ -208,8 +208,8 @@ callInFor = testCase "Call in for"
               (ListExpression [ LiteralExpression $ LitInteger 1
                               , LiteralExpression $ LitInteger 2
                               , LiteralExpression $ LitInteger 3])
-              [StaticPiece " ", CallPiece (ReferenceExpression "i"), StaticPiece " "]])
-      (parseAll <^> "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
+              [StaticPiece " ", CallPiece (ReferenceExpression $ RefLocal "i"), StaticPiece " "]])
+      (generateAST "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
    )
 
 
@@ -217,8 +217,8 @@ callAfterLet :: TestTree
 callAfterLet = testCase "Call after let"
   (assertEqual "Should be parsed to valid AST"
      (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
-            , StaticPiece " I'm ", CallPiece (ReferenceExpression "i"), StaticPiece " years old. "])
-     (parseAll <^> "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
+            , StaticPiece " I'm ", CallPiece (ReferenceExpression $ RefLocal "i"), StaticPiece " years old. "])
+     (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
   )
 
 callForMapMember :: TestTree
@@ -228,8 +228,8 @@ callForMapMember = testCase "Call for map member"
          [ Decl [("m", LiteralExpression $ LitMap $ M.fromList
              [("age", LitInteger 21), ("name", LitString "dawid"), ("pet", LitMap $ M.fromList[("name", LitString "Azor")])])]
          , StaticPiece " "
-         , CallPiece (MapMemberExpression "m" ["pet","name"])])
-     (parseAll <^> "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")
+         , CallPiece (MapMemberExpression (RefLocal "m") ["pet","name"])])
+     (generateAST "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")
   )
 
 
@@ -243,7 +243,7 @@ simpleComment :: TestTree
 simpleComment = testCase "Simple comment"
    (assertEqual "Should ignore contents of comment tag"
       (Right [CommentPiece])
-      (parseAll <^> "{{comment}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endcomment}}")
+      (generateAST "{{comment}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endcomment}}")
    )
 
 {-
@@ -256,5 +256,5 @@ rawWithStructuralTagsInside :: TestTree
 rawWithStructuralTagsInside = testCase "Raw tag with structural tags inside"
    (assertEqual "Should treat structural tags as static content"
       (Right [RawPiece " {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent "])
-      (parseAll <^> "{{raw}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endraw}}")
+      (generateAST "{{raw}} {{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent {{endraw}}")
    )

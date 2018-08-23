@@ -1,5 +1,5 @@
 module Assertions
-   (assertEither, right, left)
+   (assertEither, assertEitherIO, assertEqualIO, right, left)
    where
 
 import Test.Tasty.HUnit
@@ -17,3 +17,18 @@ assertEither msg expected actual =
         (Left _, Left _) -> assertEqual msg "" ""
         (Right _, Right _) -> assertEqual msg "" ""
         _ -> assertEqual msg "" "-"
+
+assertEitherIO :: (HasCallStack) => String -> IO (Either a b) -> IO (Either c d) -> Assertion
+assertEitherIO msg ex ac = do
+    expected <- ex
+    actual <- ac
+    case (expected, actual) of
+        (Left _, Left _) -> assertEqual msg "" ""
+        (Right _, Right _) -> assertEqual msg "" ""
+        _ -> assertEqual msg "" "-"
+
+assertEqualIO :: (HasCallStack, Eq a, Show a) => String -> IO a -> IO a -> Assertion
+assertEqualIO msg ex ac = do
+    expected <- ex
+    actual <- ac
+    assertEqual msg expected actual

@@ -22,7 +22,14 @@ type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
 
 type VariableLookup = M.Map String Literal
 type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
-type RenderState = (VariableLookup, ScopeStack)
+
+-- (local vars ($), global vars (@))
+-- global vars are constant and are passed to includes
+data RenderState = RenderState { localVars :: VariableLookup
+                               , globalVars :: VariableLookup
+                               , scopeStack :: ScopeStack
+                               } deriving (Show, Eq)
+
 data RenderError = RenderError String deriving (Show)
 type Render a = Renderer String RenderState RenderError a
 
@@ -31,21 +38,24 @@ type Parser a = ParsecT String () Identity a
 data Piece = StaticPiece String
            | CommentPiece
            | RawPiece String
-           | IncludeRefPiece String -- Important: inclue have separate scope stack and local variables
+           | IncludeRefPiece Reference -- Important: inclue have separate scope stack and local variables
            | IncludePathPiece String
            | BlockPiece String [Piece]
            | ForPiece String Expression [Piece] -- name of var, list expression, inside of block
            | IfPiece [Expression] [[Piece]]
            | CallPiece Expression
            | Decl [(String, Expression)]
-           | ExpressionPiece Expression
            deriving (Show, Eq)
 
 data Expression = LiteralExpression Literal
                 | ListExpression [Expression]
-                | ReferenceExpression String
-                | MapMemberExpression String [String]
+                | ReferenceExpression Reference
+                | MapMemberExpression Reference [String]
                 deriving (Show, Eq)
+
+data Reference = RefLocal String
+               | RefGlobal String
+               deriving (Show, Eq)
 
 data Literal = LitString !String
              | LitList ![Literal]

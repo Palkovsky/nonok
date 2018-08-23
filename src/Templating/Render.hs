@@ -17,7 +17,7 @@ feed str =
     case generateAST str of
         Left err  -> return $ Left $ show err
         Right ast -> do
-            (e, rendered) <- runRenderer initialRenderState $ render ast
+            (e, rendered) <- runRenderer defaultRenderState $ render ast
             return $ case e of {Left err -> Left $ show err; Right _ -> Right rendered}
 
 render :: [Piece] -> Render ()
@@ -28,7 +28,7 @@ render (piece:xs) = do
         (IfPiece exprs piecesList) -> renderIf exprs piecesList
         (CallPiece expr) -> renderCall expr
         (Decl decs) -> renderDecl decs
-        (IncludeRefPiece var) -> renderIncludeRef var
+        (IncludeRefPiece ref) -> renderIncludeRef ref
         (IncludePathPiece path) -> renderIncludePath path
         _  -> return ()
     render xs
@@ -52,7 +52,7 @@ renderFor var (LiteralExpression (LitList iterable)) pieces =
         popFrame) iterable
 
 renderFor var (ReferenceExpression ref) pieces = do
-    contents <- getVar ref
+    contents <- evalExpr $  ReferenceExpression ref
     renderFor var (LiteralExpression contents) pieces
 
 renderFor var (ListExpression exprs) pieces =
@@ -89,9 +89,9 @@ renderIf (expr:xs) (pieces:ys) = do
 renderIf [] [] = return ()
 renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
 
-renderIncludeRef :: String -> Render ()
-renderIncludeRef var = do
-    lit <- getVar var
+renderIncludeRef :: Reference -> Render ()
+renderIncludeRef ref = do
+    lit <- evalExpr $ ReferenceExpression ref
     let str = show $ lit
     result <- liftIO $ feed str
     case result of

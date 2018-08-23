@@ -26,6 +26,7 @@ dependencies:
 - containers
 - transformers
 - text
+- directory
 - blaze-builder
 - tasty
 - tasty-hunit
