@@ -198,7 +198,7 @@ pathInclude = testCase "Path include"
   ------------------------- CALL TAG
 -}
 callTag :: TestTree
-callTag = testGroup "Call tag" [callAfterLet, callInFor, callForMapMember]
+callTag = testGroup "Call tag" [callAfterLet, callInFor, callForMapMember, callForGlobalVar]
 
 callInFor :: TestTree
 callInFor = testCase "Call in for"
@@ -232,6 +232,13 @@ callForMapMember = testCase "Call for map member"
      (generateAST "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")
   )
 
+callForGlobalVar :: TestTree
+callForGlobalVar = testCase "Call for global variable"
+  (assertEqual "Should be parsed to valid AST"
+     (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
+            , StaticPiece " I'm ", CallPiece (MapMemberExpression (RefGlobal "person") ["name"]), StaticPiece " years old. "])
+     (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- @person.name }} years old. ")
+  )
 
 {-
   ------------------------- COMMENTS

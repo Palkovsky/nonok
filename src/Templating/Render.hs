@@ -12,12 +12,12 @@ import Control.Monad.IO.Class (liftIO)
 
 import System.Directory
 
-feed :: String -> IO (Either String String)
-feed str =
+feed :: VariableLookup -> String -> IO (Either String String)
+feed globals str =
     case generateAST str of
         Left err  -> return $ Left $ show err
         Right ast -> do
-            (e, rendered) <- runRenderer defaultRenderState $ render ast
+            (e, rendered) <- runRenderer (initialRenderState globals) $ render ast
             return $ case e of {Left err -> Left $ show err; Right _ -> Right rendered}
 
 render :: [Piece] -> Render ()
@@ -93,7 +93,8 @@ renderIncludeRef :: Reference -> Render ()
 renderIncludeRef ref = do
     lit <- evalExpr $ ReferenceExpression ref
     let str = show $ lit
-    result <- liftIO $ feed str
+    state <- getState
+    result <- liftIO $ feed (globalVars state) str
     case result of
         (Left err) -> throwE $ RenderError err
         (Right rendered) -> writeString rendered
@@ -103,7 +104,8 @@ renderIncludePath path = do
     exists <- liftIO $ doesFileExist path
     throwUnless exists $ RenderError "Unexistent file specified in include."
     contents <- liftIO $ readFile path
-    result <- liftIO $ feed contents
+    state <- getState
+    result <- liftIO $ feed (globalVars state) contents
     case result of
         (Left err) -> throwE $ RenderError err
         (Right rendered) -> writeString rendered
