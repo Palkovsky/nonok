@@ -49,7 +49,7 @@ throwUnless b err = if b then return () else throwE err
 writeString :: String -> Render ()
 writeString str = lift $ tell str
 
-setVar :: String -> Literal -> Render ()
+setVar :: String -> Expression -> Render ()
 setVar key lit = do
    state <- getState
    let vars = localVars state
@@ -73,13 +73,13 @@ delVar key = do
        newStack = newScope:(tail stack)
    putState $ state {localVars=newVars, scopeStack=newStack}
 
-getVar :: String -> Render Literal
+getVar :: String -> Render Expression
 getVar key = do
    state <- getState
    let vars = localVars state
    throwNothing (M.lookup key vars) (RenderError $ "Unable to find variable '$" ++ key ++ "'.")
 
-getGlobalVar :: String -> Render Literal
+getGlobalVar :: String -> Render Expression
 getGlobalVar key = do
    state <- getState
    let vars = globalVars state
@@ -103,32 +103,37 @@ popFrame = do
     let stackNew = scopeStack updatedState
     putState $ updatedState {scopeStack=(tail stackNew)}
 
-literalToBool :: Literal -> Render Bool
-literalToBool (LitBool bool) = return bool
-literalToBool (LitString str) = return $ (length str) /= 0
-literalToBool (LitInteger int) = return $ int /= 0
-literalToBool (LitDouble double) = return $ double /= 0
-literalToBool _ = throwE $ RenderError "Unable to evaluate literal to bool."
+exprToBool :: Expression -> Render Bool
+exprToBool (LiteralExpression (LitBool bool)) = return bool
+exprToBool (LiteralExpression (LitString str)) = return $ (length str) /= 0
+exprToBool (LiteralExpression (LitInteger int)) = return $ int /= 0
+exprToBool (LiteralExpression (LitDouble double)) = return $ double /= 0.0
+exprToBool (LiteralExpression (LitRef ref)) = do {expr <- evalLiteral $ LitRef ref; exprToBool expr}
+exprToBool _ = throwE $ RenderError "Unable to evaluate literal to bool."
 
-evalExpr :: Expression -> Render Literal
-evalExpr (LiteralExpression lit) = return lit
-evalExpr (ReferenceExpression (RefLocal var)) = do {lit <- getVar var; return lit}
-evalExpr (ReferenceExpression (RefGlobal var)) = do {lit <- getGlobalVar var; return lit}
-evalExpr (ListExpression list) = do {literals <- mapM evalExpr list; return $ LitList literals}
-evalExpr (MapMemberExpression refExpr keys) = do
-    lMap <- evalExpr $ ReferenceExpression refExpr
+evalLiteral :: Literal -> Render Expression
+evalLiteral (LitRef (RefLocal var)) = do {lit <- getVar var; return lit}
+evalLiteral (LitRef (RefGlobal var)) = do {lit <- getGlobalVar var; return lit}
+evalLiteral l = return $ LiteralExpression l
+
+evalExpr :: Expression -> Render Expression
+evalExpr (LiteralExpression l) = evalLiteral l
+evalExpr (ListExpression list) = do {newList <- mapM evalExpr list; return $ ListExpression newList}
+evalExpr (MapExpression m) = do {newMap <- mapM evalExpr m; return $ MapExpression newMap}
+evalExpr (MapMemberExpression ref keys) = do
+    lMap <- evalLiteral $ LitRef ref
     parseNext lMap keys
     where
         parseNext m [] = return m
         parseNext lMap [key] = do
             case lMap of
-                (LitMap m) -> do
+                (MapExpression m) -> do
                    content <- throwNothing (M.lookup key m) $ RenderError "Tried to access unexistent map member."
                    return content
                 _ -> throwE $ RenderError "Tried to access field of non-map structure."
         parseNext lMap (key:rest) = do
             case lMap of
-                (LitMap m) -> do
+                (MapExpression m) -> do
                     content <- throwNothing (M.lookup key m) $ RenderError "Tried to access unexistent map member."
                     parseNext content rest
                 _ -> throwE $ RenderError "Tried to access field of non-map structure."

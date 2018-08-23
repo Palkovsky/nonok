@@ -103,7 +103,7 @@ parseExpr = try parseMapMemberExpr <|>
             try parseMap <|>
             try parseList
     where
-        parseRef = parseReference >>= (return . ReferenceExpression)
+        parseRef = parseReference >>= (return . LiteralExpression . LitRef)
         parseInteger = parseInt >>= (return . LiteralExpression . LitInteger)
         parseDouble = parseFloat >>= (return . LiteralExpression . LitDouble)
         parseBool = do
@@ -119,10 +119,10 @@ parseExpr = try parseMapMemberExpr <|>
             label <- ((try $ parseStringContents '\'') <|> (try $ parseStringContents '\"'))
             spaces >> char ':' >> spaces
             expr <- parseExpr
-            case expr of {LiteralExpression lit -> return (label, lit); _ -> unexpected "Not literal."}
+            return (label, expr) --case expr of {LiteralExpression lit -> return (label, lit); _ -> unexpected "Not literal."}
         parseMap = do
             list <- between (char '{') (char '}') (sepBy parseMapPair $ spaces >> char ',' >> spaces)
-            return $ LiteralExpression $ LitMap $ M.fromList list
+            return $ MapExpression $ M.fromList list
         parseMapMemberExpr = do
             ref <- parseReference
             dot

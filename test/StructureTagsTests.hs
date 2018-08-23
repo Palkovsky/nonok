@@ -208,7 +208,7 @@ callInFor = testCase "Call in for"
               (ListExpression [ LiteralExpression $ LitInteger 1
                               , LiteralExpression $ LitInteger 2
                               , LiteralExpression $ LitInteger 3])
-              [StaticPiece " ", CallPiece (ReferenceExpression $ RefLocal "i"), StaticPiece " "]])
+              [StaticPiece " ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " "]])
       (generateAST "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
    )
 
@@ -217,7 +217,7 @@ callAfterLet :: TestTree
 callAfterLet = testCase "Call after let"
   (assertEqual "Should be parsed to valid AST"
      (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
-            , StaticPiece " I'm ", CallPiece (ReferenceExpression $ RefLocal "i"), StaticPiece " years old. "])
+            , StaticPiece " I'm ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " years old. "])
      (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
   )
 
@@ -225,8 +225,9 @@ callForMapMember :: TestTree
 callForMapMember = testCase "Call for map member"
   (assertEqual "Should be parsed to valid AST"
      (Right
-         [ Decl [("m", LiteralExpression $ LitMap $ M.fromList
-             [("age", LitInteger 21), ("name", LitString "dawid"), ("pet", LitMap $ M.fromList[("name", LitString "Azor")])])]
+         [ Decl [("m", MapExpression $ M.fromList
+             [ ("age", LiteralExpression $ LitInteger 21), ("name", LiteralExpression $ LitString "dawid")
+             , ("pet", MapExpression $ M.fromList [("name", LiteralExpression $ LitString "Azor")])])]
          , StaticPiece " "
          , CallPiece (MapMemberExpression (RefLocal "m") ["pet","name"])])
      (generateAST "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")

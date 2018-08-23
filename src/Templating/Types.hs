@@ -20,7 +20,7 @@ import Control.Monad.Trans.Writer
 -}
 type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
 
-type VariableLookup = M.Map String Literal
+type VariableLookup = M.Map String Expression
 type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
 
 -- (local vars ($), global vars (@))
@@ -39,7 +39,7 @@ data Piece = StaticPiece String
            | CommentPiece
            | RawPiece String
            | IncludeRefPiece Reference -- Important: inclue have separate scope stack and local variables
-           | IncludePathPiece String
+           | IncludePathPiece String -- TODO: optional include field with extra globals passed
            | BlockPiece String [Piece]
            | ForPiece String Expression [Piece] -- name of var, list expression, inside of block
            | IfPiece [Expression] [[Piece]]
@@ -49,29 +49,33 @@ data Piece = StaticPiece String
 
 data Expression = LiteralExpression Literal
                 | ListExpression [Expression]
-                | ReferenceExpression Reference
+                | MapExpression (M.Map String Expression)
                 | MapMemberExpression Reference [String]
                 deriving (Show, Eq)
 
-data Reference = RefLocal String
-               | RefGlobal String
+data PrintableExpression = PrintableExpression Expression
+
+data Reference = RefLocal !String
+               | RefGlobal !String
                deriving (Show, Eq)
 
 data Literal = LitString !String
-             | LitList ![Literal]
              | LitBool !Bool
              | LitDouble !Double
              | LitInteger !Integer
-             | LitMap (M.Map String Literal)
+             | LitRef Reference
              | LitEmpty
              deriving (Eq)
 
 instance Show Literal where
     show (LitString v) = v
-    show (LitList list) = "[" ++ (intercalate ", "  $ map show list) ++ "]"
     show (LitBool b) = if b then "true" else "false"
     show (LitDouble n) = show n
     show (LitInteger n) = show n
-    show (LitMap m) = "{" ++ (intercalate ", "  $
-         map (\(key, val) -> "\"" ++ key ++ "\" : " ++ (show val)) $ M.toList m) ++ "}"
+    show (LitRef (RefLocal var)) = "$" ++ var
+    show (LitRef (RefGlobal var)) = "@" ++ var
     show LitEmpty = ""
+
+instance Show PrintableExpression where
+    show (PrintableExpression (LiteralExpression lit)) = show lit
+    show x = show x 

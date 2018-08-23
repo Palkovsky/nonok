@@ -40,20 +40,13 @@ renderFor :: String -> Expression -> [Piece] -> Render ()
 renderFor var (LiteralExpression (LitString iterable)) pieces =
     mapM_ (\char -> do
         pushFrame
-        setVar var $ LitString [char]
+        setVar var $ LiteralExpression $ LitString [char]
         render pieces
         popFrame) iterable
 
-renderFor var (LiteralExpression (LitList iterable)) pieces =
-    mapM_ (\lit -> do
-        pushFrame
-        setVar var lit
-        render pieces
-        popFrame) iterable
-
-renderFor var (ReferenceExpression ref) pieces = do
-    contents <- evalExpr $  ReferenceExpression ref
-    renderFor var (LiteralExpression contents) pieces
+renderFor var (LiteralExpression (LitRef ref)) pieces = do
+    contents <- evalLiteral $ LitRef ref
+    renderFor var contents pieces
 
 renderFor var (ListExpression exprs) pieces =
     mapM_ (\expr -> do
@@ -74,13 +67,13 @@ renderDecl [] = return ()
 
 renderCall :: Expression -> Render ()
 renderCall expr = do
-   lit <- evalExpr expr
-   writeString $ show lit
+   evaluated <- evalExpr expr
+   writeString $ show $ PrintableExpression evaluated
 
 renderIf :: [Expression] -> [[Piece]] -> Render ()
 renderIf (expr:xs) (pieces:ys) = do
     literal <- evalExpr expr
-    boolean <- literalToBool literal
+    boolean <- exprToBool literal
     if boolean then do
         pushFrame
         render pieces
@@ -91,8 +84,8 @@ renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
 
 renderIncludeRef :: Reference -> Render ()
 renderIncludeRef ref = do
-    lit <- evalExpr $ ReferenceExpression ref
-    let str = show $ lit
+    expr <- evalLiteral $ LitRef ref
+    let str = show $ PrintableExpression expr
     state <- getState
     result <- liftIO $ feed (globalVars state) str
     case result of

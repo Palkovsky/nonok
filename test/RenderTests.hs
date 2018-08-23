@@ -82,6 +82,7 @@ renderIncludes = testGroup "Rendering includes"
      , renderIncludeFromPath
      , renderIncludeFromVarWithError
      , renderIncludeFromPathWithError
+     , renderIncludeLocalInheritanceError
      , renderIncludeGlobalInheritance]
 
 renderIncludeFromVar :: TestTree
@@ -98,12 +99,20 @@ renderIncludeFromPath = testCase "Include from path"
     (feed M.empty "{{include 'test/static/include_test_correct.txt'}}")
  )
 
+renderIncludeLocalInheritanceError :: TestTree
+renderIncludeLocalInheritanceError = testCase "Inheriting local variables"
+  (assertEitherIO "Should error out"
+     (return left)
+     (feed M.empty "{{let $j=21, $i='{-$j}}'}}{{include $i}}")
+  )
+
 renderIncludeGlobalInheritance :: TestTree
-renderIncludeGlobalInheritance = testCase "Include from path"
+renderIncludeGlobalInheritance = testCase "Inheriting global variables in includes"
   (assertEqualIO "Should render valid output"
-     (return $ Right "andrzej\n inner: andrzej")
-     (feed (M.fromList [("person", LitMap $ M.fromList [("name", LitString "andrzej")])])
-      "{{include 'test/static/include_test_inheritance.txt'}} inner: {-@person.name}}")
+     (return $ Right "andrzej inner: andrzej")
+     (feed (M.fromList [("person", MapExpression $ M.fromList
+         [("name", LiteralExpression $ LitString "andrzej")])])
+      "{{let $i='{-@person.name}}'}}{{include $i}} inner: {-@person.name}}")
   )
 
 renderIncludeFromVarWithError :: TestTree
