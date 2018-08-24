@@ -2,7 +2,6 @@
 
 module Templating.Parser where
 
-import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 
 import Text.Parsec
@@ -17,10 +16,6 @@ import Templating.Types
 
 generateAST :: String -> Either ParseError [Piece]
 generateAST str = parse (parseBlock eof) "" str
-
--- | Strips every line
-purify :: String -> String
-purify input = foldr (++) [] $ map (T.unpack . T.strip . T.pack) $ lines input
 
 -- | Conusme parser but igonre result
 void :: Parser a -> Parser ()
