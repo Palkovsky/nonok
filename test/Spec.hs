@@ -6,7 +6,8 @@ import Test.Tasty.HUnit
 
 import StructureTagsTests ( forLoops, ifStatements, declarations
                           , includes, callTag, comments, raw)
-import RenderTests (renderForLoop, renderDeclarations, renderIncludes)
+import RenderTests ( renderForLoop, renderIfStatement, renderDeclarations
+                   , renderIncludes, renderRawAndComment)
 import ExpressionTests (expressions)
 
 main :: IO ()
@@ -16,4 +17,5 @@ tests :: TestTree
 tests = testGroup "Tests" [ forLoops, ifStatements, declarations
                           , includes, callTag, comments, raw
                           , renderForLoop, renderDeclarations
-                          , renderIncludes, expressions]
+                          , renderIncludes, renderRawAndComment
+                          , expressions, renderIfStatement]

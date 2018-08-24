@@ -21,6 +21,7 @@ import Control.Monad.Trans.Writer
 type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
 
 type VariableLookup = M.Map String Expression
+type FunctionStore = M.Map String Function
 type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
 
 -- (local vars ($), global vars (@))
@@ -28,11 +29,14 @@ type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
 data RenderState = RenderState { localVars :: VariableLookup
                                , globalVars :: VariableLookup
                                , scopeStack :: ScopeStack
-                               } deriving (Show, Eq)
+                               , functions :: FunctionStore
+                               }
 
-data RenderError = RenderError String deriving (Show)
+data RenderError = RenderError String
+                 | FunctionError String
+                 deriving (Show)
+
 type Render a = Renderer String RenderState RenderError a
-
 type Parser a = ParsecT String () Identity a
 
 data Piece = StaticPiece String
@@ -40,7 +44,6 @@ data Piece = StaticPiece String
            | RawPiece String
            | IncludeRefPiece Reference (Maybe Expression)-- Important: inclue have separate scope stack and local variables
            | IncludePathPiece String (Maybe Expression)
-           | BlockPiece String [Piece]
            | ForPiece String Expression [Piece] -- name of var, list expression, contents of block
            | IfPiece [Expression] [[Piece]]
            | CallPiece Expression
@@ -51,6 +54,7 @@ data Expression = LiteralExpression Literal
                 | ListExpression [Expression]
                 | MapExpression (M.Map String Expression)
                 | MapMemberExpression Reference [String]
+                | FuncExpression String [Expression]
                 deriving (Show, Eq)
 
 data PrintableExpression = PrintableExpression Expression
@@ -58,6 +62,11 @@ data PrintableExpression = PrintableExpression Expression
 data Reference = RefLocal !String
                | RefGlobal !String
                deriving (Show, Eq)
+
+data Function = FuncA0 (Render Expression)
+              | FuncA1 (Expression -> Render Expression)
+              | FuncA2 (Expression -> Expression -> Render Expression)
+              | FuncA3 (Expression -> Expression -> Expression -> Render Expression)
 
 data Literal = LitString !String
              | LitBool !Bool

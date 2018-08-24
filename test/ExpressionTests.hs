@@ -18,12 +18,17 @@ people = ListExpression $ map (MapExpression . M.fromList) $
     , [("name", LiteralExpression $ LitString $ "Dawid"), ("age", LiteralExpression $ LitInteger $ 12)]
     , [("name", LiteralExpression $ LitString $ "Andrzej"), ("age", LiteralExpression $ LitInteger $ 42)]]
 
+peopleLookup :: VariableLookup
+peopleLookup = M.fromList [("people", people)]
+
 expressions :: TestTree
 expressions = testGroup "Expressions"
      [ mapWithVariableFields
      , mapWithGlobalVariableFields
      , includeWithMemberCallInGlobals
-     , includeWithMapByReference ]
+     , includeWithMapByReference
+     , parsingNestedFunctions
+     , printingUppercasedPeopleNames]
 
 mapWithVariableFields :: TestTree
 mapWithVariableFields = testCase "Map with variable fields"
@@ -55,3 +60,18 @@ includeWithMapByReference = testCase "Passing reference to map in include"
       (feed M.empty
        "{{let $map=  {   'person' :{ 'name':'dawid'}}, $i='{-@person.name}}'}}{{include $i, $map }}")
    )
+
+parsingNestedFunctions :: TestTree
+parsingNestedFunctions = testCase "Passing reference to map in include"
+  (assertEqual "Should be parsed to valid AST"
+     (Right $ [CallPiece $ FuncExpression "f1"
+         [FuncExpression "f2" [LiteralExpression $ LitString "x"], LiteralExpression $ LitInteger 12]])
+     (generateAST "{- f1(f2('x'), 12) }}")
+  )
+
+printingUppercasedPeopleNames :: TestTree
+printingUppercasedPeopleNames = testCase "Passing map members arguments to function"
+  (assertEqualIO "Should render valid output"
+     (return $ Right "MIREK MICHAL DAWID ANDRZEJ ")
+     (feed peopleLookup "{{ for $person in @people }}{- toUpperCase($person.name) }} {{ endfor }}")
+  )

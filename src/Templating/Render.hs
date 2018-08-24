@@ -2,7 +2,7 @@ module Templating.Render where
 
 import Templating.Types
 import Templating.Parser (generateAST)
-import Templating.RenderHelpers
+import Templating.Helpers
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State
@@ -28,13 +28,14 @@ render :: [Piece] -> Render ()
 render (piece:xs) = do
     case piece of
         (StaticPiece str) -> writeString str
+        (CommentPiece) -> return ()
+        (RawPiece str) -> writeString str
+        (IncludeRefPiece ref globals) -> renderIncludeRef ref globals
+        (IncludePathPiece path globals) -> renderIncludePath path globals
         (ForPiece var expr pieces) -> renderFor var expr pieces
         (IfPiece exprs piecesList) -> renderIf exprs piecesList
         (CallPiece expr) -> renderCall expr
         (Decl decs) -> renderDecl decs
-        (IncludeRefPiece ref globals) -> renderIncludeRef ref globals
-        (IncludePathPiece path globals) -> renderIncludePath path globals
-        _  -> return ()
     render xs
 
 render [] = return ()
@@ -59,6 +60,10 @@ renderFor var (ListExpression exprs) pieces =
         setVar var lit
         render pieces
         popFrame) exprs
+
+renderFor var (FuncExpression name args) pieces = do
+    expr <- evalExpr $ FuncExpression name args
+    renderFor var expr pieces
 
 renderFor var _ pieces = throwE $ RenderError "not implemented yet"
 
@@ -91,7 +96,7 @@ mergedGlobals maybeMapExpr = do
     state <- getState
     globalsExpr <- maybe (return $ MapExpression M.empty) evalExpr maybeMapExpr
     globalsMap <- getMapFromExpr (RenderError "Not map passed as new globals.") globalsExpr
-    return $ merge preserveMissing preserveMissing (zipWithMatched (\_ _ x ->  x)) (globalVars state) globalsMap 
+    return $ merge preserveMissing preserveMissing (zipWithMatched (\_ _ x ->  x)) (globalVars state) globalsMap
 
 renderIncludeRef :: Reference -> Maybe Expression -> Render ()
 renderIncludeRef ref maybeMapExpr = do

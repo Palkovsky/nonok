@@ -1,6 +1,7 @@
-module Templating.RenderHelpers where
+module Templating.Helpers where
 
 import Templating.Types
+import Templating.Functions (defaultFunctions, callFunc)
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -17,10 +18,16 @@ runRenderer state r = do
     return (result, finalWriter)
 
 defaultRenderState :: RenderState
-defaultRenderState = RenderState {localVars=M.empty, globalVars=M.empty, scopeStack=[S.empty]}
+defaultRenderState = RenderState { localVars=M.empty
+                                 , globalVars=M.empty
+                                 , scopeStack=[S.empty]
+                                 , functions = defaultFunctions}
 
 initialRenderState :: VariableLookup -> RenderState
-initialRenderState globals =  RenderState {localVars=M.empty, globalVars=globals, scopeStack=[S.empty]}
+initialRenderState globals =  RenderState { localVars=M.empty
+                                          , globalVars=globals
+                                          , scopeStack=[S.empty]
+                                          , functions = defaultFunctions}
 
 -- \ Check if expression is MapExpression, if so it returns map, otherwise throws error.
 getMapFromExpr :: RenderError -> Expression -> Render (M.Map String Expression)
@@ -124,6 +131,12 @@ evalExpr :: Expression -> Render Expression
 evalExpr (LiteralExpression l) = evalLiteral l
 evalExpr (ListExpression list) = do {newList <- mapM evalExpr list; return $ ListExpression newList}
 evalExpr (MapExpression m) = do {newMap <- mapM evalExpr m; return $ MapExpression newMap}
+evalExpr (FuncExpression name args) = do
+    state <- getState
+    f <- throwNothing (M.lookup name (functions state)) $ RenderError $ "Function '" ++ name ++ "' doesn't exists."
+    resolvedArgs <- mapM evalExpr args --arguments should be resolved to basic form
+    result <- callFunc f resolvedArgs -- probably need to add executing and error handling here
+    evalExpr result
 evalExpr (MapMemberExpression ref keys) = do
     lMap <- evalLiteral $ LitRef ref
     parseNext lMap keys

@@ -1,5 +1,5 @@
 module RenderTests
-   (renderForLoop, renderDeclarations, renderIncludes)
+   (renderForLoop, renderIfStatement, renderDeclarations, renderIncludes, renderRawAndComment)
    where
 
 import Lib
@@ -16,7 +16,8 @@ renderForLoop = testGroup "Rendering for loops"
      , renderNestedForLoop
      , renderForLoopWithReferenceIterator
      , renderForWithOutsideReferenceDeclaration
-     , loopThroughPeopleList]
+     , loopThroughPeopleList
+     , loopThroughFunctionResult]
 
 renderSingleForLoop :: TestTree
 renderSingleForLoop = testCase "Single for loop"
@@ -57,6 +58,13 @@ loopThroughPeopleList = testCase "Loops throug list of maps representing people"
          \{{endfor}}")
   )
 
+loopThroughFunctionResult :: TestTree
+loopThroughFunctionResult = testCase "For loop through function result"
+  (assertEqualIO "Should render valid output"
+     (return $ Right "D A W I D ")
+     (feed M.empty "{{ let $name='dawid' }}{{ for $char in toUpperCase($name)}}{-$char}} {{endfor}}")
+  )
+
 renderDeclarations :: TestTree
 renderDeclarations = testGroup "Rendering declarations"
      [ renderAccessToUndefinedVar
@@ -75,6 +83,25 @@ renderOutOfScopeAccess = testCase "Error out if accessed out of scope var"
      (return left)
      (feed M.empty "{{for $i in [['abc'],['def'],['ghi']]}} {{let $k=20}} {{endfor}} {- $k }}")
   )
+
+renderIfStatement :: TestTree
+renderIfStatement = testGroup "Rendering if statements"
+     [ renderIfStatementWithFunctionResult
+     , renderIfInForLoop]
+
+renderIfStatementWithFunctionResult :: TestTree
+renderIfStatementWithFunctionResult = testCase "If statement with function call as bool"
+    (assertEqualIO "Should render valid output"
+        (return $ Right "not empty")
+        (feed M.empty "{{ let $name='dawid' }}{{ if toUpperCase($name) }}not empty{{endif}}")
+    )
+
+renderIfInForLoop :: TestTree
+renderIfInForLoop = testCase "If statement inside for loop"
+    (assertEqualIO "Should render valid output"
+        (return $ Right "JESTEM D JESTEM A NIEWIEMKIMJESTEM NIEWIEMKIMJESTEM JESTEM D ")
+        (feed M.empty "{{ for $char in 'dawid' }}{{ if equal($char, 'd') }}JESTEM D {{elif equal($char, 'a')}}JESTEM A {{else}}NIEWIEMKIMJESTEM {{endif}}{{endfor}}")
+    )
 
 renderIncludes :: TestTree
 renderIncludes = testGroup "Rendering includes"
@@ -147,4 +174,23 @@ renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path
         (feed (M.fromList [("person", MapExpression $ M.fromList
             [("name", LiteralExpression $ LitString "andrzej")])])
         "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
+    )
+
+renderRawAndComment :: TestTree
+renderRawAndComment = testGroup "Rendering raw and comments"
+     [ renderRaw
+     , renderComment]
+
+renderRaw :: TestTree
+renderRaw = testCase "Rendering contents of raw tag"
+    (assertEqualIO "Should render valid output"
+         (return $ Right " {{if $x}}xxx{{endif}} ")
+    (feed M.empty " {{raw }}{{if $x}}xxx{{endif}}{{endraw }} ")
+    )
+
+renderComment :: TestTree
+renderComment = testCase "Skipping contents of comment tag"
+    (assertEqualIO "Should render valid output"
+         (return $ Right "  ")
+    (feed M.empty " {{ comment }}  {   {i  f $x }}x xx{ { e n dif}}{{ endcomment }} ")
     )

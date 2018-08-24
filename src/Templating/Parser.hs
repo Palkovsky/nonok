@@ -107,6 +107,7 @@ parseMap = do
 
 parseExpr :: Parser Expression
 parseExpr = try parseMapMemberExpr <|>
+            try parseFunc <|>
             try parseRefExpression <|>
             try parseDouble <|>
             try parseInteger <|>
@@ -126,12 +127,15 @@ parseExpr = try parseMapMemberExpr <|>
         parseList = do
             list <- between (char '[') (char ']') (sepBy parseExpr $ spaces >> char ',' >> spaces)
             return $ ListExpression list
-
         parseMapMemberExpr = do
             ref <- parseReference
             dot
             keys <- sepBy wordString dot
             return $ MapMemberExpression ref keys
+        parseFunc = do
+            funcName <- wordString
+            args <- between (char '(') (char ')') (sepBy parseExpr $ spaces >> char ',' >> spaces)
+            return $ FuncExpression funcName args
 
 parseFor :: Parser Piece
 parseFor = do
@@ -185,7 +189,7 @@ parseIf = do
 parseDecl :: Parser Piece
 parseDecl = do
     tagStart >> spaces >> string "let" >> spaces1
-    decls <- sepBy1 parseSingle (spaces >> char ',' >> spaces)
+    decls <- sepBy1 parseSingle (try (spaces >> char ',' >> spaces))
     spaces >> tagEnd
     return $ Decl decls
     where
