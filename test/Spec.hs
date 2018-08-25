@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import Text.Nonok
 import Test.Tasty
 import Test.Tasty.HUnit
 

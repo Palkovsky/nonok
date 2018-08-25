@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Templating.Parser where
+module Text.Nonok.Parser where
 
 import qualified Data.Map.Strict as M
 
@@ -12,7 +12,7 @@ import Text.Parsec.Language (emptyDef)
 import Control.Monad.Identity (Identity)
 import Control.Monad (filterM)
 
-import Templating.Types
+import Text.Nonok.Types
 
 generateAST :: String -> Either ParseError [Piece]
 generateAST str = parse (parseBlock eof) "" str

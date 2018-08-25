@@ -1,8 +1,8 @@
-module Templating.Render where
+module Text.Nonok.Render where
 
-import Templating.Types
-import Templating.Parser (generateAST)
-import Templating.Helpers
+import Text.Nonok.Types
+import Text.Nonok.Parser (generateAST)
+import Text.Nonok.Helpers
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State

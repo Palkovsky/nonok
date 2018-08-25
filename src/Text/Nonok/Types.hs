@@ -1,4 +1,4 @@
-module Templating.Types where
+module Text.Nonok.Types where
 
 import Text.Parsec
 import Text.Parsec.Expr

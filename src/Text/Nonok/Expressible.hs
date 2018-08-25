@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Templating.Expressible (Expressible(..), expressInt, expressFloat) where
+module Text.Nonok.Expressible (Expressible(..), expressInt, expressFloat) where
 
-import Templating.Types
+import Text.Nonok.Types
 
 import qualified Data.Map.Strict as M
 

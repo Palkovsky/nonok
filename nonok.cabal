@@ -1,0 +1,72 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 80f900bc9a95377aa8f501f625c555e4751dae9078facb32eebf94ddb5ee8ce8
+
+name:           nonok
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/nonok#readme>
+homepage:       https://github.com/palkovsky/nonok#readme
+bug-reports:    https://github.com/palkovsky/nonok/issues
+author:         Dawid Macek
+maintainer:     dawidmacek42@gmail.com
+copyright:      Copyright 2018 Dawid Macek
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/palkovsky/nonok
+
+library
+  exposed-modules:
+      Text.Nonok
+      Text.Nonok.Expressible
+      Text.Nonok.Functions
+      Text.Nonok.Helpers
+      Text.Nonok.Parser
+      Text.Nonok.Render
+      Text.Nonok.Types
+  other-modules:
+      Paths_nonok
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , directory
+    , mtl
+    , parsec
+    , text
+    , transformers
+  default-language: Haskell2010
+
+test-suite nonok-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Assertions
+      ExpressionTests
+      RenderTests
+      StructureTagsTests
+      Paths_nonok
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , directory
+    , mtl
+    , nonok
+    , parsec
+    , tasty
+    , tasty-hunit
+    , text
+    , transformers
+  default-language: Haskell2010

@@ -2,13 +2,12 @@ module StructureTagsTests
    (forLoops, ifStatements, declarations, includes, callTag, comments, raw)
    where
 
-import Lib
+import Text.Nonok
 
 import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
-import Templating.Expressible
 import qualified Data.Map.Strict as M
 
 {-

@@ -2,13 +2,13 @@ module ExpressionTests
    (expressions)
    where
 
-import Lib
+import Text.Nonok
 
 import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
-import Templating.Expressible
+import Text.Nonok.Expressible
 import qualified Data.Map.Strict as M
 
 -- Really have to add some king of auto type detector for variable passed.
@@ -74,5 +74,5 @@ printingUppercasedPeopleNames :: TestTree
 printingUppercasedPeopleNames = testCase "Passing map members arguments to function"
   (assertEqualIO "Should render valid output"
      (return $ Right "MIREK MICHAL DAWID ANDRZEJ ")
-     (feed peopleLookup "{{ for $person in @people }}{- toUpperCase($person.name) }} {{ endfor }}")
+     (feed peopleLookup "{{ for $person in @people }}{- upper($person.name) }} {{ endfor }}")
   )

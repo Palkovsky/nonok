@@ -1,7 +1,7 @@
-module Templating.Helpers where
+module Text.Nonok.Helpers where
 
-import Templating.Types
-import Templating.Functions (defaultFunctions, callFunc)
+import Text.Nonok.Types
+import Text.Nonok.Functions (defaultFunctions, callFunc)
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S

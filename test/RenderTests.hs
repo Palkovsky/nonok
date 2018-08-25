@@ -2,13 +2,12 @@ module RenderTests
    (renderForLoop, renderIfStatement, renderDeclarations, renderIncludes, renderRawAndComment)
    where
 
-import Lib
+import Text.Nonok
 
 import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
-import Templating.Expressible
 import qualified Data.Map.Strict as M
 
 renderForLoop :: TestTree
@@ -63,7 +62,7 @@ loopThroughFunctionResult :: TestTree
 loopThroughFunctionResult = testCase "For loop through function result"
   (assertEqualIO "Should render valid output"
      (return $ Right "D A W I D ")
-     (feed M.empty "{{ let $name='dawid' }}{{ for $char in toUpperCase($name)}}{-$char}} {{endfor}}")
+     (feed M.empty "{{ let $name='dawid' }}{{ for $char in upper($name)}}{-$char}} {{endfor}}")
   )
 
 renderDeclarations :: TestTree
@@ -94,7 +93,7 @@ renderIfStatementWithFunctionResult :: TestTree
 renderIfStatementWithFunctionResult = testCase "If statement with function call as bool"
     (assertEqualIO "Should render valid output"
         (return $ Right "not empty")
-        (feed M.empty "{{ let $name='dawid' }}{{ if toUpperCase($name) }}not empty{{endif}}")
+        (feed M.empty "{{ let $name='dawid' }}{{ if upper($name) }}not empty{{endif}}")
     )
 
 renderIfInForLoop :: TestTree

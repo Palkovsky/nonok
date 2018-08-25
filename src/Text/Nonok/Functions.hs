@@ -1,11 +1,11 @@
-module Templating.Functions
+module Text.Nonok.Functions
     ( defaultFunctions
     , callFunc
     , newFunc)
     where
 
-import Templating.Types
-import Templating.Expressible
+import Text.Nonok.Types
+import Text.Nonok.Expressible
 import Control.Monad.IO.Class (liftIO)
 import Data.Ratio (numerator)
 
