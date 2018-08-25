@@ -31,6 +31,8 @@ expressFloat float = express $ FractionalWrap float
 
 instance Expressible Bool where
     express = express . LitBool
+instance Expressible Char where
+   express char = express $ LitString [char]
 instance {-# OVERLAPS #-} Expressible [Char] where
     express = express . LitString
 instance {-# OVERLAPPABLE #-} (Expressible a) => Expressible [a] where

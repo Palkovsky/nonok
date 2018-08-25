@@ -2,9 +2,9 @@ name:                templating-lang
 version:             0.1.0.0
 github:              "githubuser/templating-lang"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2018 Author name here"
+author:              "Dawid Macek"
+maintainer:          "dawidmacek42@gmail.com"
+copyright:           "2018 Dawid Macek"
 
 extra-source-files:
 - README.md
@@ -23,9 +23,10 @@ dependencies:
 - base >= 4.7 && < 5
 - parsec
 - mtl
-- containers
 - transformers
+- containers
 - directory
+- text
 
 library:
   source-dirs: src

@@ -8,16 +8,32 @@ import Templating.Types
 import Templating.Expressible
 import Control.Monad.IO.Class (liftIO)
 import Data.Ratio (numerator)
-import Data.Char (toUpper)
+
+import Data.List (intersperse)
+import Data.Char (toUpper, toLower)
 
 import Control.Monad.Trans.Except
+import Data.Foldable (foldrM)
 
+import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 
 defaultFunctions :: FunctionStore
 defaultFunctions = M.fromList
-    [ ("toUpperCase", FuncA1 toUpperCase)
-    , ("equal", FuncA2 equal)]
+    [ ("upper", FuncA1 toUpperF)
+    , ("lower", FuncA1 toLowerF)
+
+    , ("equal", FuncA2 equalF)
+    , ("gt", FuncA2 gtF)
+    , ("gte", FuncA2 gteF)
+    , ("lt", FuncA2 ltF)
+    , ("lte", FuncA2 lteF)
+
+    , ("strip", FuncA1 stripF)
+    , ("replace", FuncA3 replaceF)
+    , ("concat", FuncA2 concatF)
+    , ("concat_arr", FuncA1 concatArrF)
+    , ("intersperse", FuncA2 intersperseF)]
 
 newFunc :: String -> Function -> FunctionStore -> FunctionStore
 newFunc = M.insert
@@ -39,11 +55,68 @@ callFunc f args = do
         (FuncA2 f) -> f (args !! 0) (args !! 1)
         (FuncA3 f) -> f (args !! 0) (args !! 1) (args !! 2)
 
-toUpperCase :: Expression -> Render Expression
-toUpperCase (LiteralExpression (LitString str)) = return $ express $ map toUpper str
-toUpperCase _ = throwE $ FunctionError "toUpperCase: Accepting only strings!"
+
+extractString :: Expression -> RenderError -> Render String
+extractString expr err =
+    case expr of {LiteralExpression (LitString str) -> return str; _ -> throwE err}
+
+extractList :: Expression -> RenderError -> Render [Expression]
+extractList expr err =
+    case expr of {ListExpression exprs -> return exprs; _ -> throwE err}
+
+-- Couple of standard functions below
+
+toUpperF :: Expression -> Render Expression
+toUpperF expr = do
+    str <- extractString expr $ FunctionError "upper: Accepting only strings!"
+    return $ express $ map toUpper str
+
+toLowerF :: Expression -> Render Expression
+toLowerF expr = do
+    str <- extractString expr $ FunctionError "lower: Accepting only strings!"
+    return $ express $ map toLower str
+
+stripF :: Expression -> Render Expression
+stripF expr = do
+    str <- extractString expr $ FunctionError "strip: Accepting only strings!"
+    (return . express . T.unpack . T.strip . T.pack) str
+
+replaceF :: Expression -> Expression -> Expression -> Render Expression
+replaceF e1 e2 e3 = do
+    needle <- extractString e1 $ FunctionError "replace: First arg must be a string!"
+    replacement  <- extractString e2 $ FunctionError "replace: Second arg must be a string!"
+    haystack  <- extractString e3 $ FunctionError "replace: Third arg must be a string!"
+    return $ express $ T.unpack $ T.replace (T.pack needle) (T.pack replacement) (T.pack haystack)
+
+concatF :: Expression -> Expression -> Render Expression
+concatF e1 e2 = do
+    str1 <- extractString e1 $ FunctionError "concat: First arg must be a string!"
+    str2  <- extractString e2 $ FunctionError "concat: Second arg must be a string!"
+    return $ express $ str1 ++ str2
+
+concatArrF :: Expression -> Render Expression
+concatArrF e = do
+    list <- extractList e $ FunctionError "concat_arr: Accepting only string lists!"
+    foldrM concatF (express "") list
+
+intersperseF :: Expression -> Expression -> Render Expression
+intersperseF (LiteralExpression (LitString split)) (LiteralExpression (LitString str)) = do
+    let charArr = map (\char -> [char])  str
+    return $ express $ foldr (++) "" $ intersperse split charArr
+intersperseF _ _ = throwE $ FunctionError "intersperse: accepting only split and string"
 
 -- compares literal expressions
-equal :: Expression -> Expression -> Render Expression
-equal (LiteralExpression l1) (LiteralExpression l2) = return $ express $ l1 == l2
-equal _ _ = throwE $ FunctionError "equal: Unable to compare passed!"
+equalF :: Expression -> Expression -> Render Expression
+equalF (LiteralExpression l1) (LiteralExpression l2) = return $ express $ l1 == l2
+equalF _ _ = throwE $ FunctionError "Uncomparable"
+
+compF :: (Integer -> Integer -> Bool) -> Expression -> Expression -> Render Expression
+compF f (LiteralExpression (LitInteger l1)) (LiteralExpression (LitInteger l2)) = return $ express $ l1 `f` l2
+compF f (LiteralExpression (LitString l1)) (LiteralExpression (LitString l2)) = return $ express $ ((fromIntegral . length) l1) `f` ((fromIntegral . length) l2)
+compF f (ListExpression exprs1) (ListExpression exprs2) = return $ express $ ((fromIntegral . length) exprs1) `f` ((fromIntegral . length) exprs2)
+compF _ _ _ = throwE $ FunctionError "Uncomparable"
+
+gtF = compF (>)
+gteF = compF (>=)
+ltF = compF (<)
+lteF = compF (<=)

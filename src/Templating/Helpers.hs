@@ -29,6 +29,9 @@ initialRenderState globals =  RenderState { localVars=M.empty
                                           , scopeStack=[S.empty]
                                           , functions = defaultFunctions}
 
+noGlobals :: VariableLookup
+noGlobals = M.empty
+
 -- \ Check if expression is MapExpression, if so it returns map, otherwise throws error.
 getMapFromExpr :: RenderError -> Expression -> Render (M.Map String Expression)
 getMapFromExpr err expr = case expr of {(MapExpression m) -> return m; _ -> throwE err}
