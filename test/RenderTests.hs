@@ -8,6 +8,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
+import Templating.Expressible
 import qualified Data.Map.Strict as M
 
 renderForLoop :: TestTree
@@ -139,8 +140,8 @@ renderIncludeGlobalInheritance :: TestTree
 renderIncludeGlobalInheritance = testCase "Inheriting global variables in includes"
   (assertEqualIO "Should render valid output"
      (return $ Right "andrzej inner: andrzej")
-     (feed (M.fromList [("person", MapExpression $ M.fromList
-         [("name", LiteralExpression $ LitString "andrzej")])])
+     (feed (M.fromList [("person", express $ M.fromList
+         [("name", express "andrzej")])])
       "{{let $i='{-@person.name}}'}}{{include $i}} inner: {-@person.name}}")
   )
 
@@ -162,8 +163,8 @@ renderIncludeRefWithOverwrittenGlobal :: TestTree
 renderIncludeRefWithOverwrittenGlobal = testCase "Overriding old global in ref include"
  (assertEqualIO "Should render valid output"
     (return $ Right "dawid inner: andrzej")
-    (feed (M.fromList [("person", MapExpression $ M.fromList
-        [("name", LiteralExpression $ LitString "andrzej")])])
+    (feed (M.fromList [("person", express $ M.fromList
+        [("name", express "andrzej")])])
      "{{let $i='{-@person.name}}'}}{{include $i, {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
  )
 
@@ -171,8 +172,8 @@ renderIncludePathWithOverwrittenGlobal :: TestTree
 renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path include"
     (assertEqualIO "Should render valid output"
         (return $ Right "dawid\n inner: andrzej")
-        (feed (M.fromList [("person", MapExpression $ M.fromList
-            [("name", LiteralExpression $ LitString "andrzej")])])
+        (feed (M.fromList [("person", express $ M.fromList
+            [("name", express "andrzej")])])
         "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
     )
 

@@ -24,6 +24,16 @@ feed globals str =
             (e, rendered) <- runRenderer (initialRenderState globals) $ render ast
             return $ case e of {Left err -> Left $ show err; Right _ -> Right rendered}
 
+feedFromFile :: VariableLookup -> FilePath -> IO (Either String String)
+feedFromFile globals path = do
+    exists <- doesFileExist path
+    if exists
+    then do
+        contents <- readFile path
+        feed globals contents
+    else return $ Left $ "Unable to resolve path '" ++ path ++ "'."
+
+
 render :: [Piece] -> Render ()
 render (piece:xs) = do
     case piece of
@@ -112,11 +122,8 @@ renderIncludeRef ref maybeMapExpr = do
 renderIncludePath :: String -> Maybe Expression -> Render ()
 renderIncludePath path maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
-    exists <- liftIO $ doesFileExist path
-    throwUnless exists $ RenderError "Unexistent file specified in include."
-    contents <- liftIO $ readFile path
     state <- getState
-    result <- liftIO $ feed newGlobals contents
+    result <- liftIO $ feedFromFile newGlobals path
     case result of
         (Left err) -> throwE $ RenderError err
         (Right rendered) -> writeString rendered

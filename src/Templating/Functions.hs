@@ -1,9 +1,11 @@
 module Templating.Functions
     ( defaultFunctions
-    , callFunc)
+    , callFunc
+    , newFunc)
     where
 
 import Templating.Types
+import Templating.Expressible
 import Control.Monad.IO.Class (liftIO)
 import Data.Ratio (numerator)
 import Data.Char (toUpper)
@@ -16,6 +18,9 @@ defaultFunctions :: FunctionStore
 defaultFunctions = M.fromList
     [ ("toUpperCase", FuncA1 toUpperCase)
     , ("equal", FuncA2 equal)]
+
+newFunc :: String -> Function -> FunctionStore -> FunctionStore
+newFunc = M.insert
 
 validateArity :: Int -> Int -> Render ()
 validateArity actual expected = if actual /= expected
@@ -35,10 +40,10 @@ callFunc f args = do
         (FuncA3 f) -> f (args !! 0) (args !! 1) (args !! 2)
 
 toUpperCase :: Expression -> Render Expression
-toUpperCase (LiteralExpression (LitString str)) = return $ LiteralExpression $ LitString $ map toUpper str
+toUpperCase (LiteralExpression (LitString str)) = return $ express $ map toUpper str
 toUpperCase _ = throwE $ FunctionError "toUpperCase: Accepting only strings!"
 
 -- compares literal expressions
 equal :: Expression -> Expression -> Render Expression
-equal (LiteralExpression l1) (LiteralExpression l2) = return $ LiteralExpression $ LitBool $ l1 == l2
+equal (LiteralExpression l1) (LiteralExpression l2) = return $ express $ l1 == l2
 equal _ _ = throwE $ FunctionError "equal: Unable to compare passed!"

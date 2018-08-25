@@ -8,6 +8,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
+import Templating.Expressible
 import qualified Data.Map.Strict as M
 
 {-
@@ -24,15 +25,15 @@ forLoops = testGroup "For loops"
 singleForLoop :: TestTree
 singleForLoop = testCase "Simple for without nesting"
    (assertEqual "Should parse simple for loop to valid AST"
-      (Right [ForPiece "i" (LiteralExpression (LitString "xxx")) [StaticPiece " static "]])
+      (Right [ForPiece "i" (express "xxx") [StaticPiece " static "]])
       (generateAST "{{for $i in 'xxx'}} static {{endfor}}"))
 
 twoNestedForLoops :: TestTree
 twoNestedForLoops = testCase "Two nested for loops"
    (assertEqual "Should parse two nested for loop to valid AST"
       (Right
-          [ForPiece "i" (LiteralExpression (LitString "xxx"))
-             [StaticPiece " ", ForPiece "j" (LiteralExpression (LitString "yyy")) [], StaticPiece " "]
+          [ForPiece "i" (express "xxx")
+             [StaticPiece " ", ForPiece "j" (express "yyy") [], StaticPiece " "]
           ])
       (generateAST "{{for $i in 'xxx'}} {{for $j in 'yyy'}}{{endfor}} {{endfor}}"))
 
@@ -65,16 +66,16 @@ ifStatements = testGroup "If statements"
 ifWithoutElifsAndElse :: TestTree
 ifWithoutElifsAndElse = testCase "Basic if without elifs and else"
    (assertEqual "Should parse simple if statement to valid AST"
-      (Right [IfPiece [LiteralExpression (LitString "expr")] [[StaticPiece " wololo"]]])
+      (Right [IfPiece [express "expr"] [[StaticPiece " wololo"]]])
       (generateAST "{{if   'expr'}} wololo{{endif}}"))
 
 ifWithElse :: TestTree
 ifWithElse = testCase "Basic if statement with else"
    (assertEqual "Should parse if with else to valid AST"
       (Right [
-           IfPiece [LiteralExpression (LitString "expr"),LiteralExpression (LitBool True)]
+           IfPiece [express "expr", express True]
            [ [StaticPiece " wololo"]
-           , [ForPiece "i" (LiteralExpression (LitString "ppp")) [StaticPiece "wnetrze"]]
+           , [ForPiece "i" (express "ppp") [StaticPiece "wnetrze"]]
            ]])
       (generateAST "{{if   'expr'}} wololo{{else}}{{for $i in 'ppp'}}wnetrze{{endfor}}{{endif}}"))
 
@@ -83,10 +84,10 @@ ifWithMultipleElifs :: TestTree
 ifWithMultipleElifs = testCase "If statement with more than one elif"
    (assertEqual "Should be parsed to valid AST"
       (Right
-          [IfPiece [ LiteralExpression (LitString "expr1")
-                   , LiteralExpression (LitString "expr2")
-                   , LiteralExpression (LitString "expr3")
-                   , LiteralExpression (LitBool True)]
+          [IfPiece [ express "expr1"
+                   , express "expr2"
+                   , express "expr3"
+                   , express True]
                    [ [StaticPiece " first block "]
                    , [StaticPiece " second "]
                    , [StaticPiece " third "]
@@ -99,20 +100,20 @@ multipleNestedIfs = testCase "If statement with more than one elif"
    (assertEqual "Should parse to valid AST"
      (Right
          [IfPiece
-             [ LiteralExpression (LitString "expr1")
-             , LiteralExpression (LitString "expr2")
-             , LiteralExpression (LitBool True)]
+             [ express "expr1"
+             , express "expr2"
+             , express True]
              [
                  [ IfPiece [LiteralExpression (LitString "expr1-nest")]
-                      [ [ForPiece "i" (LiteralExpression (LitString "wolllo"))
-                            [ Decl [("j",LiteralExpression (LitString "xxx"))]
+                      [ [ForPiece "i" (express "wolllo")
+                            [ Decl [("j", express "xxx")]
                             , StaticPiece "nested for"]]
                       ]
                  ]
                  , [ IfPiece
-                      [ LiteralExpression (LitString "expr2-nest")
-                      , LiteralExpression (LitString "expr2-nest-2")
-                      , LiteralExpression (LitString "expr2-nest-3")]
+                      [ express "expr2-nest"
+                      , express "expr2-nest-2"
+                      , express "expr2-nest-3"]
                       [[StaticPiece " one "],[StaticPiece ""],[StaticPiece " three "]]
                   ]
                 , [StaticPiece "else"]
@@ -154,7 +155,7 @@ declarations = testGroup "Declarations" [singleDeclaration, multipleDeclaration,
 singleDeclaration :: TestTree
 singleDeclaration = testCase "Single declaration"
    (assertEqual "Should parse simple declaration to valid AST"
-      (Right [StaticPiece "warszawa ",Decl [("name",LiteralExpression (LitString "dawid"))],StaticPiece " legia"])
+      (Right [StaticPiece "warszawa ",Decl [("name", express "dawid")],StaticPiece " legia"])
       (generateAST "warszawa {{let        $name='dawid'}} legia")
    )
 
@@ -162,7 +163,7 @@ singleDeclaration = testCase "Single declaration"
 multipleDeclaration :: TestTree
 multipleDeclaration = testCase "Multiple declaration"
    (assertEqual "Should parse multiple declaration to valid AST"
-      (Right [ Decl [("name",LiteralExpression (LitString "dawid")),("lastname",LiteralExpression (LitString "Palkovksy"))]
+      (Right [ Decl [("name", express "dawid"),("lastname", express "Palkovksy")]
              , StaticPiece "staticcontent"])
       (generateAST "{{let $name   =  'dawid',   $lastname='Palkovksy'}}staticcontent")
    )
@@ -203,7 +204,7 @@ referenceIncludeWithNewGlobals = testCase "Reference include with new globals"
    (assertEqual "Should parse include tag"
       (Right
           [IncludeRefPiece (RefLocal "k")
-              (Just $ MapExpression $ M.fromList [("name", LiteralExpression $ LitString "andrzej")])])
+              (Just $ MapExpression $ M.fromList [("name", express "andrzej")])])
       (generateAST "{{include $k , {'name' : 'andrzej'} }}")
    )
 
@@ -212,8 +213,8 @@ pathIncludeWithNewGlobals = testCase "Path include with new globals"
   (assertEqual "Should parse include tag"
      (Right
          [IncludePathPiece "folder/file.html"
-             (Just $ MapExpression $ M.fromList
-                 [("person", MapExpression $ M.fromList $ [("name", LiteralExpression $ LitString "andrzej")])])]
+             (Just $ express $ M.fromList
+                 [("person", express $ M.fromList $ [("name", express "andrzej")])])]
      )
      (generateAST "{{include 'folder/file.html', {'person' : {'name' : 'andrzej'} } }}")
   )
@@ -230,9 +231,9 @@ callInFor = testCase "Call in for"
    (assertEqual "Should be parsed to valid AST"
       (Right [
           ForPiece "i"
-              (ListExpression [ LiteralExpression $ LitInteger 1
-                              , LiteralExpression $ LitInteger 2
-                              , LiteralExpression $ LitInteger 3])
+              (express [ expressInt 1
+                       , expressInt 2
+                       , expressInt 3])
               [StaticPiece " ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " "]])
       (generateAST "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
    )
@@ -241,7 +242,7 @@ callInFor = testCase "Call in for"
 callAfterLet :: TestTree
 callAfterLet = testCase "Call after let"
   (assertEqual "Should be parsed to valid AST"
-     (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
+     (Right [ Decl [("i", expressFloat 32.4),("j", express "xxx")]
             , StaticPiece " I'm ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " years old. "])
      (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
   )
@@ -250,9 +251,9 @@ callForMapMember :: TestTree
 callForMapMember = testCase "Call for map member"
   (assertEqual "Should be parsed to valid AST"
      (Right
-         [ Decl [("m", MapExpression $ M.fromList
-             [ ("age", LiteralExpression $ LitInteger 21), ("name", LiteralExpression $ LitString "dawid")
-             , ("pet", MapExpression $ M.fromList [("name", LiteralExpression $ LitString "Azor")])])]
+         [ Decl [("m", express $ M.fromList
+             [ ("age", expressInt 21), ("name", express "dawid")
+             , ("pet", express $ M.fromList [("name", express "Azor")])])]
          , StaticPiece " "
          , CallPiece (MapMemberExpression (RefLocal "m") ["pet","name"])])
      (generateAST "{{let $m={'name':'dawid', 'age':21, 'pet':{'name':'Azor'}}}} {-$m.pet.name}}")
@@ -261,7 +262,7 @@ callForMapMember = testCase "Call for map member"
 callForGlobalVar :: TestTree
 callForGlobalVar = testCase "Call for global variable"
   (assertEqual "Should be parsed to valid AST"
-     (Right [ Decl [("i", LiteralExpression $ LitDouble 32.4),("j", LiteralExpression $ LitString "xxx")]
+     (Right [ Decl [("i", expressFloat 32.4),("j", express "xxx")]
             , StaticPiece " I'm ", CallPiece (MapMemberExpression (RefGlobal "person") ["name"]), StaticPiece " years old. "])
      (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- @person.name }} years old. ")
   )

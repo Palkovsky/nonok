@@ -8,15 +8,16 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
+import Templating.Expressible
 import qualified Data.Map.Strict as M
 
 -- Really have to add some king of auto type detector for variable passed.
 people :: Expression
-people = ListExpression $ map (MapExpression . M.fromList) $
-    [ [("name", LiteralExpression $ LitString $ "Mirek"), ("age", LiteralExpression $ LitInteger $ 20)]
-    , [("name", LiteralExpression $ LitString $ "Michal"), ("age", LiteralExpression $ LitInteger $ 50)]
-    , [("name", LiteralExpression $ LitString $ "Dawid"), ("age", LiteralExpression $ LitInteger $ 12)]
-    , [("name", LiteralExpression $ LitString $ "Andrzej"), ("age", LiteralExpression $ LitInteger $ 42)]]
+people = express $ map (express . M.fromList) $
+    [ [("name", express "Mirek"), ("age", expressInt 20)]
+    , [("name", express "Michal"), ("age", expressInt 50)]
+    , [("name", express "Dawid"), ("age", expressInt 12)]
+    , [("name", express "Andrzej"), ("age", expressInt 42)]]
 
 peopleLookup :: VariableLookup
 peopleLookup = M.fromList [("people", people)]
@@ -41,7 +42,7 @@ mapWithGlobalVariableFields :: TestTree
 mapWithGlobalVariableFields = testCase "Map with global variable fields"
   (assertEqualIO "Should render valid output"
     (return $ Right "Name: David, age: 30")
-    (feed (M.fromList [("age", LiteralExpression $ LitInteger 30)])
+    (feed (M.fromList [("age", expressInt 30)])
      "{{let $age=21, $n='David', $person={'name' : $n, 'age' : @age}}}Name: {- $person.name }}, age: {- $person.age }}")
   )
 
@@ -65,7 +66,7 @@ parsingNestedFunctions :: TestTree
 parsingNestedFunctions = testCase "Passing reference to map in include"
   (assertEqual "Should be parsed to valid AST"
      (Right $ [CallPiece $ FuncExpression "f1"
-         [FuncExpression "f2" [LiteralExpression $ LitString "x"], LiteralExpression $ LitInteger 12]])
+         [FuncExpression "f2" [express "x"], expressInt 12]])
      (generateAST "{- f1(f2('x'), 12) }}")
   )
 
