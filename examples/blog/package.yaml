@@ -1,17 +1,13 @@
-name:                nonok
+name:                nonok-blog
 version:             0.1.0.0
-github:              "palkovsky/nonok"
 license:             BSD3
 author:              "Dawid Macek"
 maintainer:          "dawidmacek42@gmail.com"
-copyright:           "Copyright 2018 Dawid Macek"
+copyright:           "2018 Dawid Macek"
 
 extra-source-files:
 - README.md
-- changelog.md
-
-
-# TODO: Fill up fields below care of this file
+- ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -20,30 +16,24 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/nonok#readme>
+description:         Please see the README on GitHub at <https://github.com/githubuser/nonok-blog#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- parsec
-- mtl
-- transformers
-- containers
+- aeson
 - directory
-- filepath
 - text
+- bytestring
+- containers
+- nonok
 
 library:
   source-dirs: src
 
-tests:
-  nonok-test:
-    main:                Spec.hs
-    source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+
+executables:
+  nonok-blog-exe:
+    main: Main.hs
+    source-dirs: app
     dependencies:
-    - nonok
-    - tasty
-    - tasty-hunit
+      - nonok-blog

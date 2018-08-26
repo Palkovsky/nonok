@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80f900bc9a95377aa8f501f625c555e4751dae9078facb32eebf94ddb5ee8ce8
+-- hash: c45288d27481fa0cb3ce14d43c5496d8e526bbc070b4b559c8079c7cb44744de
 
 name:           nonok
 version:        0.1.0.0
@@ -12,11 +12,12 @@ bug-reports:    https://github.com/palkovsky/nonok/issues
 author:         Dawid Macek
 maintainer:     dawidmacek42@gmail.com
 copyright:      Copyright 2018 Dawid Macek
-license:        MIT
+license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:
+    changelog.md
     README.md
 
 source-repository head
@@ -40,6 +41,7 @@ library
       base >=4.7 && <5
     , containers
     , directory
+    , filepath
     , mtl
     , parsec
     , text
@@ -62,6 +64,7 @@ test-suite nonok-test
       base >=4.7 && <5
     , containers
     , directory
+    , filepath
     , mtl
     , nonok
     , parsec
