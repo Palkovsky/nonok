@@ -14,7 +14,6 @@ module Text.Nonok
     , setVar
     , getVar
     , delVar
-    , getVar
     , getGlobalVar
     , pushFrame
     , popFrame

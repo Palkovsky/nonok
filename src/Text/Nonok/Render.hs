@@ -11,6 +11,7 @@ import Control.Monad.Trans.Writer
 import Control.Monad.IO.Class (liftIO)
 
 import System.Directory
+import System.FilePath (takeDirectory)
 
 import qualified Data.Map.Strict as M
 import Data.Map.Merge.Strict (merge, preserveMissing, zipWithMatched)
@@ -29,8 +30,12 @@ feedFromFile globals path = do
     exists <- doesFileExist path
     if exists
     then do
+        curDir <- getCurrentDirectory
         contents <- readFile path
-        feed globals contents
+        setCurrentDirectory $ takeDirectory path
+        result <- feed globals contents
+        setCurrentDirectory curDir
+        return result
     else return $ Left $ "Unable to resolve path '" ++ path ++ "'."
 
 

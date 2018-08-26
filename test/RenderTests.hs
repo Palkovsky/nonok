@@ -171,8 +171,7 @@ renderIncludePathWithOverwrittenGlobal :: TestTree
 renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path include"
     (assertEqualIO "Should render valid output"
         (return $ Right "dawid\n inner: andrzej")
-        (feed (M.fromList [("person", express $ M.fromList
-            [("name", express "andrzej")])])
+        (feed (M.fromList [("person", express $ M.fromList [("name", express "andrzej")])])
         "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
     )
 

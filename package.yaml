@@ -1,7 +1,7 @@
 name:                nonok
 version:             0.1.0.0
 github:              "palkovsky/nonok"
-license:             MIT
+license:             BSD3
 author:              "Dawid Macek"
 maintainer:          "dawidmacek42@gmail.com"
 copyright:           "Copyright 2018 Dawid Macek"
@@ -28,6 +28,7 @@ dependencies:
 - transformers
 - containers
 - directory
+- filepath
 - text
 
 library:
