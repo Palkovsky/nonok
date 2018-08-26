@@ -59,7 +59,7 @@ Body of comment tag will be ignored.
 
 `{{ raw }} ... {{ endraw }}`
 
-Body of raw tag will be interpreted as plain text, ignoring all characters.
+Body of raw tag will be interpreted as plain text, ignoring all special characters.
 
 ### Rendering
 
