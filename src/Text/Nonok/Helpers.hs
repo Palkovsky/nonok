@@ -22,14 +22,12 @@ runRenderer state r = do
 defaultRenderState :: RenderState
 defaultRenderState = RenderState { localVars=M.empty
                                  , globalVars=M.empty
+                                 , blocksLookup=M.empty
                                  , scopeStack=[S.empty]
                                  , functions = defaultFunctions}
 
 initialRenderState :: VariableLookup -> RenderState
-initialRenderState globals =  RenderState { localVars=M.empty
-                                          , globalVars=globals
-                                          , scopeStack=[S.empty]
-                                          , functions = defaultFunctions}
+initialRenderState globals =  defaultRenderState {globalVars = globals}
 
 noGlobals :: VariableLookup
 noGlobals = M.empty

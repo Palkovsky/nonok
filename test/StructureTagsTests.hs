@@ -1,5 +1,5 @@
 module StructureTagsTests
-   (forLoops, ifStatements, declarations, includes, callTag, comments, raw)
+   (forLoops, ifStatements, declarations, includes, callTag, blocks, comments, raw)
    where
 
 import Text.Nonok
@@ -273,6 +273,22 @@ callForGlobalVar = testCase "Call for global variable"
             , StaticPiece " I'm ", CallPiece (MapMemberExpression (RefGlobal "person") ["name"]), StaticPiece " years old. "])
      (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- @person.name }} years old. ")
   )
+
+{-
+  ------------------------- BLOCKS
+-}
+
+blocks :: TestTree
+blocks = testGroup "Blocks" [simpleBlocksAndExtends]
+
+simpleBlocksAndExtends :: TestTree
+simpleBlocksAndExtends = testCase "Simple block and extends"
+    (assertEqual "Should be parsed to valid AST"
+        (Right
+          [ ExtendsPiece "base.html", StaticPiece " Web Page "
+          , BlockPiece "title" [StaticPiece " My blog "], StaticPiece " "])
+        (generateAST "  {{ extends 'base.html' }} Web Page {{ block title }} My blog {{endblock}} ")
+    )
 
 {-
   ------------------------- COMMENTS

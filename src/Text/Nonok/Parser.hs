@@ -15,7 +15,14 @@ import Control.Monad (filterM)
 import Text.Nonok.Types
 
 generateAST :: String -> Either ParseError [Piece]
-generateAST str = parse (parseBlock eof) "" str
+generateAST str = parse parseTemplate "" str
+
+parseTemplate :: Parser [Piece]
+parseTemplate = do
+    maybeExtends <- optionMaybe $ try (spaces >> parseExtends)
+    pieces <- parseBody eof
+    return $ maybe pieces (\extends -> extends:pieces) maybeExtends
+
 
 -- | Conusme parser but igonre result
 void :: Parser a -> Parser ()
@@ -142,7 +149,7 @@ parseFor = do
     var <- tagStart >> spaces >> string "for" >> spaces1 >> parseLocalVariable
     exp <- spaces1 >> string "in" >> spaces1 >> parseExpr
     spaces >> tagEnd
-    blocks <- parseBlock (try $ tag $ string "endfor")
+    blocks <- parseBody (try $ tag $ string "endfor")
     return $ ForPiece var exp blocks
 
 parseIf :: Parser Piece
@@ -164,7 +171,7 @@ parseIf = do
            tag $ string "else"
            return $ LiteralExpression $ LitBool True
        blockNotEmpty = do
-           block <- parseBlock endBlock
+           block <- parseBody endBlock
            return $ case block of {[] -> [StaticPiece ""]; x -> id x}
        parseNext = do
            isEnd <- optionMaybe $ (try $ void $ lookAhead $ tag $ string "endif")
@@ -217,6 +224,21 @@ parseIncludePath = do
     spaces >> tagEnd
     return $ IncludePathPiece path newGlobals
 
+parseExtends :: Parser Piece
+parseExtends = do
+    path <- tagStart >> spaces >> string "extends" >> spaces1
+    path <- (try $ between (char '\'')  (char '\'') pathString) <|>
+                  (between (char '\"')  (char '\"') pathString)
+    spaces >> tagEnd
+    return $ ExtendsPiece path
+
+parseBlock :: Parser Piece
+parseBlock = do
+    blockId <- tagStart >> spaces >> string "block" >> spaces1 >> wordString
+    spaces >> tagEnd
+    pieces <- parseBody (try $ tag $ string "endblock")
+    return $ BlockPiece blockId pieces
+
 parseComment :: Parser Piece
 parseComment = do
     tag $ string "comment"
@@ -256,11 +278,12 @@ nonStatic = try parseFor <|>
             try parseDecl <|>
             try parseIncludeRef <|>
             try parseIncludePath <|>
+            try parseBlock <|>
             try parseCall <|>
             try parseRaw <|>
             try parseComment
 
-parseBlock :: Parser a -> Parser [Piece]
-parseBlock end = do
+parseBody :: Parser a -> Parser [Piece]
+parseBody end = do
     pieces <- manyTill (nonStatic <|> static) end
     filterM (\x -> return $ x /= (StaticPiece "")) pieces

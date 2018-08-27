@@ -1,4 +1,11 @@
-{{ include "includes/header.html" }}
-<h1> {- @post.title }} </h1>
-<div class="text"> {- @post.text }} </div>
-{{ include "includes/footer.html" }}
+{{ extends "base.html" }}
+
+{{ block title }}
+  {- @post.title }}
+{{ endblock }}
+
+{{ block content }}
+  <a href="../index.html"> Back </a>
+  <h1> {- @post.title }} </h1>
+  <div class="text"> {- @post.text }} </div>
+{{ endblock }}

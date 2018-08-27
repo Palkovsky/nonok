@@ -25,11 +25,13 @@ type Renderer w s b a = ExceptT b (WriterT w (StateT s IO)) a
 type VariableLookup = M.Map String Expression
 type FunctionStore = M.Map String Function
 type ScopeStack = [S.Set String] --stack contains list of vars defined in scope
+type BlocksLookup = M.Map String [Piece]
 
 -- (local vars ($), global vars (@))
 -- global vars are constant and are passed to includes
 data RenderState = RenderState { localVars :: VariableLookup
                                , globalVars :: VariableLookup
+                               , blocksLookup :: BlocksLookup
                                , scopeStack :: ScopeStack
                                , functions :: FunctionStore
                                }
@@ -52,6 +54,8 @@ data Piece = StaticPiece String
            | IfPiece [Expression] [[Piece]]
            | CallPiece Expression
            | Decl [(String, Expression)]
+           | ExtendsPiece String
+           | BlockPiece String [Piece]
            deriving (Show, Eq)
 
 data Expression = LiteralExpression Literal

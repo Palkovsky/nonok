@@ -54,7 +54,7 @@ generatePost post = do
               , ("text", express $ T.unpack $ text post)
               , ("slug", express $ T.unpack $ slug post)]
           )]
-    result <- feedFromFile globals "layout/post.html"
+    result <- feedFromFile (initialRenderState globals) "layout/post.html"
     case result of
         Right txt -> TIO.writeFile ("generated/blog/" ++ (T.unpack $ slug post) ++ ".html") txt
         Left err  -> putStrLn $ show err
@@ -68,7 +68,7 @@ generateListing posts = do
           , ("text", express $ T.unpack $ text post)
           , ("slug", express $ T.unpack $ slug post)]) posts
     let globals = M.fromList [("posts", p)]
-    result <- feedFromFile globals "layout/listing.html"
+    result <- feedFromFile (initialRenderState globals) "layout/listing.html"
     case result of
         Left err  -> putStrLn $ show err
         Right txt -> TIO.writeFile "generated/index.html" txt

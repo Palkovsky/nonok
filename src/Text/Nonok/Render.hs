@@ -21,17 +21,17 @@ import qualified Data.Map.Strict as M
 import Data.Map.Merge.Strict (merge, preserveMissing, zipWithMatched)
 
 
-feed :: VariableLookup -> T.Text -> IO (Either RenderError T.Text)
-feed globals text =
+feed :: RenderState -> T.Text -> IO (Either RenderError T.Text)
+feed state text =
     case generateAST (T.unpack text) of
         Left err  -> return $ Left $ ParsingError err
         Right ast -> do
-            (e, builder) <- runRenderer (initialRenderState globals) $ render ast
+            (e, builder) <- runRenderer state $ render ast
             let rendered = LT.toStrict $ B.toLazyText builder
             return $ case e of {Left err -> Left err; Right _ -> Right rendered}
 
-feedFromFile :: VariableLookup -> FilePath -> IO (Either RenderError T.Text)
-feedFromFile globals path = do
+feedFromFile :: RenderState -> FilePath -> IO (Either RenderError T.Text)
+feedFromFile state path = do
     exists <- doesFileExist path
     if exists
     then do
@@ -39,15 +39,18 @@ feedFromFile globals path = do
         contents <- TIO.readFile path
         -- this is not thread-safe, that's way some tests might fail
         setCurrentDirectory $ takeDirectory path
-        result <- feed globals contents
+        result <- feed state contents
         setCurrentDirectory curDir
         return result
     else return $ Left $ RenderError $ "Unable to resolve path '" ++ path ++ "'."
 
 
 render :: [Piece] -> Render ()
+render ((ExtendsPiece path):xs) = renderExtends path xs --if it's extended. give render control to parent
 render (piece:xs) = do
     case piece of
+        (ExtendsPiece path) -> return ()
+        (BlockPiece identifier pieces) -> renderBlock identifier pieces
         (StaticPiece str) -> writeString str
         (CommentPiece) -> return ()
         (RawPiece str) -> writeString str
@@ -112,7 +115,7 @@ renderIf (expr:xs) (pieces:ys) = do
 renderIf [] [] = return ()
 renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
 
-mergedGlobals :: Maybe Expression -> Render (M.Map String Expression)
+mergedGlobals :: Maybe Expression -> Render VariableLookup
 mergedGlobals maybeMapExpr = do
     state <- getState
     globalsExpr <- maybe (return $ MapExpression M.empty) evalExpr maybeMapExpr
@@ -124,8 +127,7 @@ renderIncludeRef ref maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
     expr <- evalLiteral $ LitRef ref
     let str = T.pack $ show $ PrintableExpression expr
-    state <- getState
-    result <- liftIO $ feed newGlobals str
+    result <- liftIO $ feed (initialRenderState newGlobals) str
     case result of
         (Left err) -> throwE err
         (Right rendered) -> writeText rendered
@@ -133,8 +135,25 @@ renderIncludeRef ref maybeMapExpr = do
 renderIncludePath :: String -> Maybe Expression -> Render ()
 renderIncludePath path maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
-    state <- getState
-    result <- liftIO $ feedFromFile newGlobals path
+    result <- liftIO $ feedFromFile (initialRenderState newGlobals) path
     case result of
         (Left err) -> throwE err
         (Right rendered) -> writeText rendered
+
+renderExtends :: String -> [Piece] -> Render ()
+renderExtends path ast = do
+    let blocksMap = M.fromList $ overridenBlocks ast
+    state <- getState
+    result <- liftIO $ feedFromFile (defaultRenderState {globalVars = (globalVars state), blocksLookup=blocksMap}) path
+    case result of
+        (Left err) -> throwE err
+        (Right rendered) -> writeText rendered
+    where
+        overridenBlocks = foldr blockFolder []
+        blockFolder piece acc = case piece of {(BlockPiece i ps) -> (i, ps):acc; _ -> acc}
+
+renderBlock :: String -> [Piece] -> Render ()
+renderBlock blockId defPieces = do
+    state <- getState
+    pieces <- maybe (return defPieces) return (M.lookup blockId $ blocksLookup state)
+    render pieces
