@@ -223,7 +223,7 @@ pathIncludeWithNewGlobals = testCase "Path include with new globals"
   ------------------------- CALL TAG
 -}
 callTag :: TestTree
-callTag = testGroup "Call tag" [callAfterLet, callInFor, callForMapMember, callForGlobalVar]
+callTag = testGroup "Call tag" [callAfterLet, parsingNestedFunctions, callInFor, callForMapMember, callForGlobalVar]
 
 callInFor :: TestTree
 callInFor = testCase "Call in for"
@@ -236,6 +236,14 @@ callInFor = testCase "Call in for"
               [StaticPiece " ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " "]])
       (generateAST "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
    )
+
+parsingNestedFunctions :: TestTree
+parsingNestedFunctions = testCase "Passing reference to map in include"
+ (assertEqual "Should be parsed to valid AST"
+    (Right $ [CallPiece $ FuncExpression "f1"
+        [FuncExpression "f2" [express "x"], expressInt 12]])
+    (generateAST "{- f1(f2('x'), 12) }}")
+ )
 
 
 callAfterLet :: TestTree

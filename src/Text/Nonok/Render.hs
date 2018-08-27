@@ -13,30 +13,36 @@ import Control.Monad.IO.Class (liftIO)
 import System.Directory
 import System.FilePath (takeDirectory)
 
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import qualified Data.Text.Lazy.Builder as B
 import qualified Data.Map.Strict as M
 import Data.Map.Merge.Strict (merge, preserveMissing, zipWithMatched)
 
 
-feed :: VariableLookup -> String -> IO (Either String String)
-feed globals str =
-    case generateAST str of
-        Left err  -> return $ Left $ show err
+feed :: VariableLookup -> T.Text -> IO (Either RenderError T.Text)
+feed globals text =
+    case generateAST (T.unpack text) of
+        Left err  -> return $ Left $ ParsingError err
         Right ast -> do
-            (e, rendered) <- runRenderer (initialRenderState globals) $ render ast
-            return $ case e of {Left err -> Left $ show err; Right _ -> Right rendered}
+            (e, builder) <- runRenderer (initialRenderState globals) $ render ast
+            let rendered = LT.toStrict $ B.toLazyText builder
+            return $ case e of {Left err -> Left err; Right _ -> Right rendered}
 
-feedFromFile :: VariableLookup -> FilePath -> IO (Either String String)
+feedFromFile :: VariableLookup -> FilePath -> IO (Either RenderError T.Text)
 feedFromFile globals path = do
     exists <- doesFileExist path
     if exists
     then do
         curDir <- getCurrentDirectory
-        contents <- readFile path
+        contents <- TIO.readFile path
+        -- this is not thread-safe, that's way some tests might fail
         setCurrentDirectory $ takeDirectory path
         result <- feed globals contents
         setCurrentDirectory curDir
         return result
-    else return $ Left $ "Unable to resolve path '" ++ path ++ "'."
+    else return $ Left $ RenderError $ "Unable to resolve path '" ++ path ++ "'."
 
 
 render :: [Piece] -> Render ()
@@ -117,12 +123,12 @@ renderIncludeRef :: Reference -> Maybe Expression -> Render ()
 renderIncludeRef ref maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
     expr <- evalLiteral $ LitRef ref
-    let str = show $ PrintableExpression expr
+    let str = T.pack $ show $ PrintableExpression expr
     state <- getState
     result <- liftIO $ feed newGlobals str
     case result of
-        (Left err) -> throwE $ RenderError err
-        (Right rendered) -> writeString rendered
+        (Left err) -> throwE err
+        (Right rendered) -> writeText rendered
 
 renderIncludePath :: String -> Maybe Expression -> Render ()
 renderIncludePath path maybeMapExpr = do
@@ -130,5 +136,5 @@ renderIncludePath path maybeMapExpr = do
     state <- getState
     result <- liftIO $ feedFromFile newGlobals path
     case result of
-        (Left err) -> throwE $ RenderError err
-        (Right rendered) -> writeString rendered
+        (Left err) -> throwE err
+        (Right rendered) -> writeText rendered

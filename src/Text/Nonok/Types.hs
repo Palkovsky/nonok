@@ -4,8 +4,10 @@ import Text.Parsec
 import Text.Parsec.Expr
 
 import Data.List (intercalate)
+import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import qualified Data.Text.Lazy.Builder as B
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State
@@ -34,9 +36,11 @@ data RenderState = RenderState { localVars :: VariableLookup
 
 data RenderError = RenderError String
                  | FunctionError String
-                 deriving (Show)
+                 | ParsingError ParseError
+                 deriving (Show, Eq)
 
-type Render a = Renderer String RenderState RenderError a
+
+type Render a = Renderer B.Builder RenderState RenderError a
 type Parser a = ParsecT String () Identity a
 
 data Piece = StaticPiece String

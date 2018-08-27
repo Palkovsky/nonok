@@ -3,6 +3,8 @@ module Text.Nonok.Expressible (Expressible(..), expressInt, expressFloat) where
 
 import Text.Nonok.Types
 
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 
 -- | This typeclass describes type ability to be converted to an expression.
@@ -28,6 +30,11 @@ instance (Real a, Fractional a) => Expressible (FractionalWrap a) where
     express (FractionalWrap x) = express $ LitDouble $ realToFrac x
 expressFloat :: (Real a, Fractional a) => a -> Expression
 expressFloat float = express $ FractionalWrap float
+
+instance Expressible T.Text where
+    express = express . LitString . T.unpack
+instance Expressible LT.Text where
+    express = express . LitString . LT.unpack
 
 instance Expressible Bool where
     express = express . LitBool

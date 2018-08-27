@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module RenderTests
    (renderForLoop, renderIfStatement, renderDeclarations, renderIncludes, renderRawAndComment)
    where
@@ -139,8 +141,8 @@ renderIncludeGlobalInheritance :: TestTree
 renderIncludeGlobalInheritance = testCase "Inheriting global variables in includes"
   (assertEqualIO "Should render valid output"
      (return $ Right "andrzej inner: andrzej")
-     (feed (M.fromList [("person", express $ M.fromList
-         [("name", express "andrzej")])])
+     (feed (M.fromList [(("person" :: String), express $ M.fromList
+         [(("name" :: String), express ("andrzej" :: String))])])
       "{{let $i='{-@person.name}}'}}{{include $i}} inner: {-@person.name}}")
   )
 
@@ -162,8 +164,8 @@ renderIncludeRefWithOverwrittenGlobal :: TestTree
 renderIncludeRefWithOverwrittenGlobal = testCase "Overriding old global in ref include"
  (assertEqualIO "Should render valid output"
     (return $ Right "dawid inner: andrzej")
-    (feed (M.fromList [("person", express $ M.fromList
-        [("name", express "andrzej")])])
+    (feed (M.fromList [(("person" :: String), express $ M.fromList
+        [(("name" :: String), express ("andrzej" :: String))])])
      "{{let $i='{-@person.name}}'}}{{include $i, {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
  )
 
@@ -171,7 +173,7 @@ renderIncludePathWithOverwrittenGlobal :: TestTree
 renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path include"
     (assertEqualIO "Should render valid output"
         (return $ Right "dawid\n inner: andrzej")
-        (feed (M.fromList [("person", express $ M.fromList [("name", express "andrzej")])])
+        (feed (M.fromList [(("person" :: String), express $ M.fromList [(("name" :: String), express ("andrzej" :: String))])])
         "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
     )
 

@@ -3,6 +3,8 @@ module Text.Nonok.Helpers where
 import Text.Nonok.Types
 import Text.Nonok.Functions (defaultFunctions, callFunc)
 
+import qualified Data.Text as T
+import qualified Data.Text.Lazy.Builder as B
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 
@@ -61,7 +63,10 @@ throwUnless :: Bool -> RenderError -> Render ()
 throwUnless b err = if b then return () else throwE err
 
 writeString :: String -> Render ()
-writeString str = lift $ tell str
+writeString str = lift $ tell $ B.fromString str
+
+writeText :: T.Text -> Render ()
+writeText txt = lift $ tell $ B.fromText txt
 
 setVar :: String -> Expression -> Render ()
 setVar key lit = do

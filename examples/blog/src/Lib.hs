@@ -12,6 +12,7 @@ import Data.Foldable (foldrM)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as B
+import qualified Data.Text.IO as TIO
 
 data Post = Post { title :: T.Text
                  , text  :: T.Text
@@ -55,8 +56,8 @@ generatePost post = do
           )]
     result <- feedFromFile globals "layout/post.html"
     case result of
-        Right str -> writeFile ("generated/blog/" ++ (T.unpack $ slug post) ++ ".html") str
-        Left err  -> putStrLn err
+        Right txt -> TIO.writeFile ("generated/blog/" ++ (T.unpack $ slug post) ++ ".html") txt
+        Left err  -> putStrLn $ show err
 
 generateListing :: [Post] -> IO ()
 generateListing posts = do
@@ -69,8 +70,8 @@ generateListing posts = do
     let globals = M.fromList [("posts", p)]
     result <- feedFromFile globals "layout/listing.html"
     case result of
-        Left err  -> putStrLn err
-        Right str -> writeFile "generated/index.html" str
+        Left err  -> putStrLn $ show err
+        Right txt -> TIO.writeFile "generated/index.html" txt
 
 generateBlog :: IO ()
 generateBlog = do
