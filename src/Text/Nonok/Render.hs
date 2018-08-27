@@ -154,6 +154,8 @@ renderExtends path ast = do
 
 renderBlock :: String -> [Piece] -> Render ()
 renderBlock blockId defPieces = do
+    pushFrame
     state <- getState
     pieces <- maybe (return defPieces) return (M.lookup blockId $ blocksLookup state)
     render pieces
+    popFrame
