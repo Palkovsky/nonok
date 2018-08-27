@@ -16,13 +16,38 @@ There are two types of variables:
 * global - passed to template renderer, automatically inherited to included templates, proceeded with `@`
 
 
-### Blocks
+### Tags
 
 #### Declarations
 
 `{{ let $age=21, $name="Andrew" }}`
 
 Variable bound to scope. It will be removed after its scope is popped from the stack.
+
+#### Blocks
+
+Blocks allow you for template inheritance. For example our base layout might look like:
+
+    <html>
+        <head>
+            <title> My page - {{ block title }} {{ endblock }}
+        </head>
+        <body>
+        {{ block content }}
+            Something that can be replaced by inheriting template.
+        {{block content}}
+        </body>
+    </html>
+
+If we want to inherit from it, we just write:
+
+    {{ extends 'base.html' }}
+    {{ block title }} Landing Page {{ endblock }}
+    {{ block content }}
+        ...
+    {{ endblock }}
+
+Thing to note is that extends must be in first line of your template. If renderer detects that you're extending other template, only block tags will be preserved. So anything you write outside `{{ block _ }} ... {{ endblock }}` will be ignored. You don't have to provide all blocks that are defined in parent template. Every block has its own scope.
 
 #### For loops
 
