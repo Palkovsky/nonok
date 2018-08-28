@@ -24,6 +24,7 @@ dependencies:
 - text
 - bytestring
 - containers
+- cmark-gfm
 - nonok
 
 library:

@@ -9,7 +9,11 @@
 
   <ul>
     {{ for $post in @posts }}
-        <li> <a href="blog/{- concat($post.slug, '.html') }}"> {- $post.title }} </a></li>
+        <li>
+            <a href="blog/{- concat($post.slug, '.html') }}"> {- $post.title }} </a>
+            <br>{- $post.ttr }} minutes read
+       </li>
+       <br>
     {{ endfor }}
   </ul>
 
