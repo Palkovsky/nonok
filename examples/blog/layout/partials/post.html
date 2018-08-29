@@ -1,0 +1,28 @@
+{{ extends "../base.html" }}
+
+{{ block title }}
+  {- @post.title }}
+{{ endblock }}
+
+{{ block assets }}
+  <link rel="stylesheet" href="../css/uikit.docs.min.css">
+  <script src="../js/uikit.min.js"></script>
+{{ endblock }}
+
+{{ block content }}
+  <article class="uk-article">
+
+      <h1 class="uk-article-title">
+          {- @post.title }}
+      </h1>
+
+      <p class="uk-article-meta">{- @post.ttr }} minutes to read</p>
+
+      {- @post.text }}
+
+      <p>
+          <a class="uk-button uk-button-primary" href="../listing.html">Back</a>
+      </p>
+
+  </article>
+{{ endblock }}

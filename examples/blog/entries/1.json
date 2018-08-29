@@ -1,5 +1,6 @@
 {
   "title" : "Sample markdown",
   "ttr" : 8,
-  "markdown" : "1.md"
+  "markdown" : "1.md",
+  "description" : "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique diam in magna consectetur, eget posuere urna efficitur. Sed in massa scelerisque, hendrerit augue quis, ultricies felis. Pellentesque non luctus eros. Phasellus rutrum, tellus quis luctus tristique, est massa sodales ex, lobortis tincidunt nibh purus ut mi. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Cras accumsan est risus, nec facilisis libero vulputate sed. Mauris malesuada risus vel lorem suscipit facilisis."
 }

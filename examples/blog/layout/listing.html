@@ -1,26 +1,25 @@
 {{ extends "base.html" }}
 
-{{ block title }}Landing Page{{ endblock }}
+{{ block title }}Blog{{ endblock }}
 
 {{ block content }}
-  <h1> Welcome on my serious personal blog! </h1>
 
-  <h2> My blog posts </h2>
+{{ for $post in @posts }}
+    <article class="uk-article">
+        {{ let $postPath = concat_arr(["blog/", $post.slug, ".html"]) }}
+        <h1 class="uk-article-title">
+            <a href="{- $postPath }}"> {- $post.title }} </a>
+        </h1>
 
-  <ul>
-    {{ for $post in @posts }}
-        <li>
-            <a href="blog/{- concat($post.slug, '.html') }}"> {- $post.title }} </a>
-            <br>{- $post.ttr }} minutes read
-       </li>
-       <br>
-    {{ endfor }}
-  </ul>
+        <p class="uk-article-meta">{- $post.ttr }} minutes to read</p>
 
+        <p>
+          {- $post.description}}
+        </p>
 
-  <h2> Gods of my youth </h2>
-  <img alt="Mr. Miroslav Zelent" style="width:200px;height:200px;" src="https://pbs.twimg.com/profile_images/534361176889511937/sv7dwwZY_400x400.jpeg"/>
-  <img alt="Mgr. Artur Fortuna" style="width:200px;height:200px;" src="https://i.imgur.com/UaCoiAR.jpg"/>
-  <img alt="Dr. Marek Gajęcki" style="width:200px;height:200px;" src="https://www.ki.agh.edu.pl/sites/default/files/userfiles/135/dziekan-gajecki.jpg"/>
-  <img alt="Michail Bialkov" style="width:200px;height:200px;" src="https://static.goldenline.pl/user_photo/121/user_49017_74ab56_huge.jpg"/>
+        <p>
+          <a class="uk-button uk-button-primary" href="{- $postPath }}">Continue Reading</a>
+        </p>
+    </article>
+{{ endfor }}
 {{ endblock }}
