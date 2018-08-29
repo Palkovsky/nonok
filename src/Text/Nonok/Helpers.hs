@@ -126,7 +126,8 @@ exprToBool (LiteralExpression (LitString str)) = return $ (length str) /= 0
 exprToBool (LiteralExpression (LitInteger int)) = return $ int /= 0
 exprToBool (LiteralExpression (LitDouble double)) = return $ double /= 0.0
 exprToBool (LiteralExpression (LitRef ref)) = do {expr <- evalLiteral $ LitRef ref; exprToBool expr}
-exprToBool _ = throwE $ RenderError "Unable to evaluate literal to bool."
+exprToBool e = throwE $ RenderError $ "Unable to evaluate'" ++ (show e) ++ "' to bool."
+
 
 evalLiteral :: Literal -> Render Expression
 evalLiteral (LitRef (RefLocal var)) = do {lit <- getVar var; return lit}

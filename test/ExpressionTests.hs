@@ -9,7 +9,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Assertions
 
-import Text.Nonok.Expressible
 import qualified Data.Map.Strict as M
 
 

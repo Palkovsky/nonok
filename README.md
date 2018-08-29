@@ -136,6 +136,8 @@ Function is treated as an expression and is evaluated to some expression. Functi
 * gte - (>=)
 * lt - (<)
 * lte - (<=)
+* and - (&&)
+* or - (||)
 * lower - 1-ary, accepts string, returns lowercased
 * upper - 1-ary, accepts string, returns uppercased
 * strip - 1-ary, accepts string, removes spaces from start and end

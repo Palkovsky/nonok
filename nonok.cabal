@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c45288d27481fa0cb3ce14d43c5496d8e526bbc070b4b559c8079c7cb44744de
+-- hash: ace1f7d55e221fb17f2df6e1e9dffbe2eee564d3a258a2f8656984e700e9d867
 
 name:           nonok
 version:        0.1.0.0
@@ -54,6 +54,7 @@ test-suite nonok-test
   other-modules:
       Assertions
       ExpressionTests
+      FunctionsTests
       RenderTests
       StructureTagsTests
       Paths_nonok

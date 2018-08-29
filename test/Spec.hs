@@ -9,6 +9,7 @@ import StructureTagsTests ( forLoops, ifStatements, declarations
 import RenderTests ( renderForLoop, renderIfStatement, renderDeclarations
                    , renderIncludes, renderRawAndComment)
 import ExpressionTests (expressions)
+import FunctionsTests (functionTests)
 
 main :: IO ()
 main = defaultMain tests
@@ -19,4 +20,4 @@ tests = testGroup "Tests" [ forLoops, ifStatements, declarations
                           , renderForLoop, renderDeclarations
                           , renderIncludes, renderRawAndComment
                           , expressions, renderIfStatement
-                          , blocks]
+                          , blocks, functionTests]

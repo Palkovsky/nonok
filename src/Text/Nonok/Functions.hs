@@ -29,6 +29,9 @@ defaultFunctions = M.fromList
     , ("lt", FuncA2 ltF)
     , ("lte", FuncA2 lteF)
 
+    , ("or", FuncA2 orF)
+    , ("and", FuncA2 andF)
+
     , ("strip", FuncA1 stripF)
     , ("replace", FuncA3 replaceF)
     , ("concat", FuncA2 concatF)
@@ -99,6 +102,12 @@ concatArrF e = do
     list <- extractList e $ FunctionError "concat_arr: Accepting only string lists!"
     foldrM concatF (express "") list
 
+orF :: Expression -> Expression -> Render Expression
+orF e1 e2 = do {b1 <- litToBool e1; b2 <- litToBool e2; return $ express $ b1 || b2}
+
+andF :: Expression -> Expression -> Render Expression
+andF e1 e2 = do {b1 <- litToBool e1; b2 <- litToBool e2; return $ express $ b1 && b2}
+
 intersperseF :: Expression -> Expression -> Render Expression
 intersperseF (LiteralExpression (LitString split)) (LiteralExpression (LitString str)) = do
     let charArr = map (\char -> [char])  str
@@ -120,3 +129,11 @@ gtF = compF (>)
 gteF = compF (>=)
 ltF = compF (<)
 lteF = compF (<=)
+
+litToBool :: Expression -> Render Bool
+litToBool (LiteralExpression (LitBool bool)) = return bool
+litToBool (LiteralExpression (LitString str)) = return $ (length str) /= 0
+litToBool (LiteralExpression (LitInteger int)) = return $ int /= 0
+litToBool (LiteralExpression (LitDouble double)) = return $ double /= 0.0
+litToBool (ListExpression list) = return $ (length list) /= 0
+litToBool e = throwE $ RenderError $ "Unable to evaluate'" ++ (show e) ++ "' to bool."
