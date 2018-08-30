@@ -71,7 +71,7 @@ setVar key lit = do
    state <- getState
    let vars = localVars state
        stack = scopeStack state
-   throwIf (null stack) $ RenderError "Setting var without scope frame."
+   throwIf (null stack) $ RenderError $ "Setting var '" ++ key ++  "' without scope frame present."
    throwIf (M.member key vars) $ RenderError $ "Variable '" ++ key ++ "' already defined."
    let newVars = M.insert key lit vars
        newScope = S.insert key $ head stack
@@ -83,8 +83,8 @@ delVar key = do
    state <- getState
    let vars = localVars state
        stack = scopeStack state
-   throwIf (null stack) $ RenderError "Deleting var without scope frame."
-   throwIf (S.notMember key $ head stack) $ RenderError "Trying to delete variable outside current scope frame."
+   throwIf (null stack) $ RenderError $ "Deleting variable '$" ++ key ++ "' without scope frame present."
+   throwIf (S.notMember key $ head stack) $ RenderError $ "Unable to delete variable '$" ++ key ++ "' outside its scope."
    let newVars = M.delete key vars
        newScope = S.delete key $ head stack
        newStack = newScope:(tail stack)
@@ -94,13 +94,13 @@ getVar :: String -> Render Expression
 getVar key = do
    state <- getState
    let vars = localVars state
-   throwNothing (M.lookup key vars) (RenderError $ "Unable to find variable '$" ++ key ++ "'.")
+   throwNothing (M.lookup key vars) $ RenderError $ "Unable to find variable '$" ++ key ++ "'."
 
 getGlobalVar :: String -> Render Expression
 getGlobalVar key = do
    state <- getState
    let vars = globalVars state
-   throwNothing (M.lookup key vars) (RenderError $ "Unable to find variable '@" ++ key ++ "'.")
+   throwNothing (M.lookup key vars) $ RenderError $ "Unable to find variable '@" ++ key ++ "'."
 
 
 pushFrame :: Render ()
@@ -123,8 +123,7 @@ popFrame = do
 exprToBool :: Expression -> Render Bool
 exprToBool (LiteralExpression (LitBool bool)) = return bool
 exprToBool (LiteralExpression (LitString str)) = return $ (length str) /= 0
-exprToBool (LiteralExpression (LitInteger int)) = return $ int /= 0
-exprToBool (LiteralExpression (LitDouble double)) = return $ double /= 0.0
+exprToBool (LiteralExpression (LitNum num)) = return $ num /= 0
 exprToBool (LiteralExpression (LitRef ref)) = do {expr <- evalLiteral $ LitRef ref; exprToBool expr}
 exprToBool e = throwE $ RenderError $ "Unable to evaluate'" ++ (show e) ++ "' to bool."
 
@@ -152,12 +151,12 @@ evalExpr (MapMemberExpression ref keys) = do
         parseNext lMap [key] = do
             case lMap of
                 (MapExpression m) -> do
-                   content <- throwNothing (M.lookup key m) $ RenderError "Tried to access unexistent map member."
+                   content <- throwNothing (M.lookup key m) $ RenderError $ "Tried to access unexistent map member '" ++ key ++ "'."
                    return content
-                _ -> throwE $ RenderError "Tried to access field of non-map structure."
+                _ -> throwE $ RenderError $ "Tried to access field '" ++ key ++ "' of non-map structure."
         parseNext lMap (key:rest) = do
             case lMap of
                 (MapExpression m) -> do
-                    content <- throwNothing (M.lookup key m) $ RenderError "Tried to access unexistent map member."
+                    content <- throwNothing (M.lookup key m) $ RenderError $ "Tried to access unexistent map member '" ++ key ++ "'."
                     parseNext content rest
-                _ -> throwE $ RenderError "Tried to access field of non-map structure."
+                _ -> throwE $ RenderError $ "Tried to access field '" ++ key ++ "' of non-map structure."

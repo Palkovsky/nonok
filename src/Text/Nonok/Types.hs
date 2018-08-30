@@ -37,13 +37,13 @@ data RenderState = RenderState { localVars :: VariableLookup
                                }
 
 data RenderError = RenderError String
-                 | FunctionError String
                  | ParsingError ParseError
                  deriving (Show, Eq)
 
 
 type Render a = Renderer B.Builder RenderState RenderError a
 type Parser a = ParsecT String () Identity a
+type VarGenerator a = WriterT [(String, Expression)] Identity a
 
 data Piece = StaticPiece String
            | CommentPiece
@@ -78,8 +78,7 @@ data Function = FuncA0 (Render Expression)
 
 data Literal = LitString !String
              | LitBool !Bool
-             | LitDouble !Double
-             | LitInteger !Integer
+             | LitNum !Integer
              | LitRef Reference
              | LitEmpty
              deriving (Eq)
@@ -87,8 +86,7 @@ data Literal = LitString !String
 instance Show Literal where
     show (LitString v) = v
     show (LitBool b) = if b then "true" else "false"
-    show (LitDouble n) = show n
-    show (LitInteger n) = show n
+    show (LitNum n) = show n
     show (LitRef (RefLocal var)) = "$" ++ var
     show (LitRef (RefGlobal var)) = "@" ++ var
     show LitEmpty = ""

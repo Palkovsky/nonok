@@ -113,18 +113,17 @@ parseMap = do
           return (label, expr)
 
 parseExpr :: Parser Expression
-parseExpr = try parseMapMemberExpr <|>
-            try parseFunc <|>
-            try parseRefExpression <|>
-            try parseDouble <|>
-            try parseInteger <|>
-            try parseBool <|>
-            try parseString <|>
-            try parseMap <|>
-            try parseList
+parseExpr =
+    try parseMapMemberExpr <|>
+    try parseFunc <|>
+    try parseRefExpression <|>
+    try parseNum <|>
+    try parseBool <|>
+    try parseString <|>
+    try parseMap <|>
+    try parseList
     where
-        parseInteger = parseInt >>= (return . LiteralExpression . LitInteger)
-        parseDouble = parseFloat >>= (return . LiteralExpression . LitDouble)
+        parseNum = parseInt >>= (return . LiteralExpression . LitNum)
         parseBool = do
            bool <- (try $ string "True" >> return True) <|> (try $ string "False" >> return False)
            return $ LiteralExpression $ LitBool bool
@@ -285,5 +284,4 @@ nonStatic = try parseFor <|>
 
 parseBody :: Parser a -> Parser [Piece]
 parseBody end = do
-    pieces <- manyTill (nonStatic <|> static) end
-    filterM (\x -> return $ x /= (StaticPiece "")) pieces
+    manyTill (nonStatic <|> static) end

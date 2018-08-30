@@ -77,29 +77,38 @@ parsePosts = do
             contents <- B.readFile f
             return $ decode contents
 
-postToExpr :: Post -> Expression
-postToExpr post = express $ M.fromList
-    [ ("title", express $ T.unpack $ title post)
-    , ("text", express $ T.unpack $ text post)
-    , ("slug", express $ T.unpack $ slug post)
-    , ("description", express $ T.unpack $ description post)
-    , ("ttr", expressInt $ ttr post)]
+genPostContent :: Post -> VarGenerator ()
+genPostContent post = do
+    addVar "title" $ title post
+    addVar "text" $ text post
+    addVar "slug" $ slug post
+    addVar "description" $ description post
+    addVar "ttr" $ ttr post
+
+genPostSingle :: Post -> VarGenerator ()
+genPostSingle post = addGen "post" $ genPostContent post
+
+genPostList :: [Post] -> VarGenerator ()
+genPostList posts = addList "posts" genPostContent posts
+
+genResponse :: String -> VarGenerator () -> VariableLookup
+genResponse nav content = buildVarLookup $ do {content; addVar "nav" nav}
 
 generatePost :: Post -> IO ()
 generatePost post = do
-    let globals = M.fromList [("post", postToExpr post), ("nav", express "post")]
+    let globals = genResponse "post" $ genPostSingle post
     result <- feedFromFile (initialRenderState globals) "layout/partials/post.html"
     eitherM (throwIO . userError . show) (TIO.writeFile ("generated/blog/" ++ (T.unpack $ slug post) ++ ".html")) result
 
 generateListing :: [Post] -> IO ()
 generateListing posts = do
-    let globals = M.fromList [("posts", express $ map postToExpr posts), ("nav", express "list")]
+    let globals =  genResponse "list" $ genPostList posts
     result <- feedFromFile (initialRenderState globals) "layout/listing.html"
     eitherM (throwIO . userError . show) (TIO.writeFile "generated/listing.html") result
 
 generateFrontpage :: IO ()
 generateFrontpage = do
-  let globals = M.fromList [("nav", express "index")]
+  let globals = genResponse "index" $ return ()
   result <- feedFromFile (initialRenderState globals) "layout/index.html"
   eitherM (throwIO . userError . show) (TIO.writeFile "generated/index.html") result
 
@@ -109,7 +118,7 @@ generateBlog = do
     createDirectoryIfMissing True "generated/blog"
     copyDirectory "layout/css" "generated/css"
     copyDirectory "layout/js" "generated/js"
-    generateFrontpage
     posts <- parsePosts
-    generateListing posts
     mapM_ generatePost posts
+    generateListing posts
+    generateFrontpage

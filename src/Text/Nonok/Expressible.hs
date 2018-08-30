@@ -1,7 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Text.Nonok.Expressible (Expressible(..), expressInt, expressFloat) where
+{-# LANGUAGE UndecidableInstances #-}
+
+module Text.Nonok.Expressible ( Expressible(..)
+                              , buildVarLookup, addVar, addGen, addList) where
 
 import Text.Nonok.Types
+
+import Control.Monad.Trans.Writer
 
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text as T
@@ -19,32 +24,42 @@ instance Expressible Literal where
 instance Expressible Reference where
     express = LiteralExpression . LitRef
 
-newtype IntegralWrap a = IntegralWrap a
-instance (Integral a) => Expressible (IntegralWrap a) where
-    express (IntegralWrap x) = express $ LitInteger $ fromIntegral x
-expressInt :: (Integral a) => a -> Expression
-expressInt int = express $ IntegralWrap int
+instance {-# OVERLAPPABLE #-} (Num a, Integral a) => (Expressible a) where
+    express = LiteralExpression . LitNum . fromIntegral
 
-newtype FractionalWrap a = FractionalWrap a
-instance (Real a, Fractional a) => Expressible (FractionalWrap a) where
-    express (FractionalWrap x) = express $ LitDouble $ realToFrac x
-expressFloat :: (Real a, Fractional a) => a -> Expression
-expressFloat float = express $ FractionalWrap float
+instance  Expressible T.Text where
+    express = LiteralExpression . LitString . T.unpack
 
-instance Expressible T.Text where
-    express = express . LitString . T.unpack
-instance Expressible LT.Text where
-    express = express . LitString . LT.unpack
+instance  Expressible LT.Text where
+    express = LiteralExpression . LitString . LT.unpack
 
-instance Expressible Bool where
-    express = express . LitBool
-instance Expressible Char where
-   express char = express $ LitString [char]
-instance {-# OVERLAPS #-} Expressible [Char] where
-    express = express . LitString
+instance  Expressible Bool where
+    express = LiteralExpression . LitBool
+
+instance   Expressible Char where
+   express char = LiteralExpression $ LitString [char]
+
+instance  Expressible [Char] where
+    express = LiteralExpression . LitString
+
 instance {-# OVERLAPPABLE #-} (Expressible a) => Expressible [a] where
     express list = ListExpression $ map express list
-instance (Expressible a) => Expressible (M.Map String a) where
+
+instance {-# OVERLAPPABLE #-} (Expressible a) => Expressible (M.Map String a) where
     express m = MapExpression $ M.map express m
+
 instance Expressible Expression where
     express = id
+
+
+buildVarLookup :: VarGenerator a -> VariableLookup
+buildVarLookup = M.fromList . execWriter
+
+addVar :: (Expressible a) => String -> a -> VarGenerator ()
+addVar key val = tell [(key, express val)]
+
+addGen :: String -> VarGenerator () -> VarGenerator ()
+addGen key writer = tell [(key, express $ buildVarLookup writer)]
+
+addList :: String -> (a -> VarGenerator ()) -> [a] -> VarGenerator ()
+addList key f list = addVar key $ map (buildVarLookup . f) list

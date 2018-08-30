@@ -33,6 +33,7 @@ defaultFunctions = M.fromList
     , ("and", FuncA2 andF)
 
     , ("strip", FuncA1 stripF)
+    , ("escape", FuncA1 escapeF)
     , ("replace", FuncA3 replaceF)
     , ("concat", FuncA2 concatF)
     , ("concat_arr", FuncA1 concatArrF)
@@ -71,35 +72,35 @@ extractList expr err =
 
 toUpperF :: Expression -> Render Expression
 toUpperF expr = do
-    str <- extractString expr $ FunctionError "upper: Accepting only strings!"
+    str <- extractString expr $ RenderError "upper: Accepting only strings!"
     return $ express $ map toUpper str
 
 toLowerF :: Expression -> Render Expression
 toLowerF expr = do
-    str <- extractString expr $ FunctionError "lower: Accepting only strings!"
+    str <- extractString expr $ RenderError "lower: Accepting only strings!"
     return $ express $ map toLower str
 
 stripF :: Expression -> Render Expression
 stripF expr = do
-    str <- extractString expr $ FunctionError "strip: Accepting only strings!"
+    str <- extractString expr $ RenderError "strip: Accepting only strings!"
     (return . express . T.unpack . T.strip . T.pack) str
 
 replaceF :: Expression -> Expression -> Expression -> Render Expression
 replaceF e1 e2 e3 = do
-    needle <- extractString e1 $ FunctionError "replace: First arg must be a string!"
-    replacement  <- extractString e2 $ FunctionError "replace: Second arg must be a string!"
-    haystack  <- extractString e3 $ FunctionError "replace: Third arg must be a string!"
+    needle <- extractString e1 $ RenderError "replace: First arg must be a string!"
+    replacement  <- extractString e2 $ RenderError "replace: Second arg must be a string!"
+    haystack  <- extractString e3 $ RenderError "replace: Third arg must be a string!"
     return $ express $ T.unpack $ T.replace (T.pack needle) (T.pack replacement) (T.pack haystack)
 
 concatF :: Expression -> Expression -> Render Expression
 concatF e1 e2 = do
-    str1 <- extractString e1 $ FunctionError "concat: First arg must be a string!"
-    str2  <- extractString e2 $ FunctionError "concat: Second arg must be a string!"
+    str1 <- extractString e1 $ RenderError "concat: First arg must be a string!"
+    str2  <- extractString e2 $ RenderError "concat: Second arg must be a string!"
     return $ express $ str1 ++ str2
 
 concatArrF :: Expression -> Render Expression
 concatArrF e = do
-    list <- extractList e $ FunctionError "concat_arr: Accepting only string lists!"
+    list <- extractList e $ RenderError "concat_arr: Accepting only string lists!"
     foldrM concatF (express "") list
 
 orF :: Expression -> Expression -> Render Expression
@@ -112,18 +113,25 @@ intersperseF :: Expression -> Expression -> Render Expression
 intersperseF (LiteralExpression (LitString split)) (LiteralExpression (LitString str)) = do
     let charArr = map (\char -> [char])  str
     return $ express $ foldr (++) "" $ intersperse split charArr
-intersperseF _ _ = throwE $ FunctionError "intersperse: accepting only split and string"
+intersperseF _ _ = throwE $ RenderError "intersperse: accepting only split and string"
+
+-- escapes html characters
+escapeF :: Expression -> Render Expression
+escapeF (LiteralExpression (LitString str)) = do
+    let replacements = [(">", "&gt;"), ("<", "&lt;"), ("&", "&amp;")]
+    return $ express $ foldr (\(needle, replacement) acc -> T.replace (T.pack needle) (T.pack replacement) acc) (T.pack str) replacements
+escapeF _ = throwE $ RenderError "escape: expected string"
 
 -- compares literal expressions
 equalF :: Expression -> Expression -> Render Expression
 equalF (LiteralExpression l1) (LiteralExpression l2) = return $ express $ l1 == l2
-equalF _ _ = throwE $ FunctionError "Uncomparable"
+equalF _ _ = throwE $ RenderError "Uncomparable"
 
 compF :: (Integer -> Integer -> Bool) -> Expression -> Expression -> Render Expression
-compF f (LiteralExpression (LitInteger l1)) (LiteralExpression (LitInteger l2)) = return $ express $ l1 `f` l2
+compF f (LiteralExpression (LitNum l1)) (LiteralExpression (LitNum l2)) = return $ express $ f l1 l2
 compF f (LiteralExpression (LitString l1)) (LiteralExpression (LitString l2)) = return $ express $ ((fromIntegral . length) l1) `f` ((fromIntegral . length) l2)
 compF f (ListExpression exprs1) (ListExpression exprs2) = return $ express $ ((fromIntegral . length) exprs1) `f` ((fromIntegral . length) exprs2)
-compF _ _ _ = throwE $ FunctionError "Uncomparable"
+compF _ _ _ = throwE $ RenderError "Uncomparable"
 
 gtF = compF (>)
 gteF = compF (>=)
@@ -133,7 +141,6 @@ lteF = compF (<=)
 litToBool :: Expression -> Render Bool
 litToBool (LiteralExpression (LitBool bool)) = return bool
 litToBool (LiteralExpression (LitString str)) = return $ (length str) /= 0
-litToBool (LiteralExpression (LitInteger int)) = return $ int /= 0
-litToBool (LiteralExpression (LitDouble double)) = return $ double /= 0.0
+litToBool (LiteralExpression (LitNum num)) = return $ num /= 0
 litToBool (ListExpression list) = return $ (length list) /= 0
 litToBool e = throwE $ RenderError $ "Unable to evaluate'" ++ (show e) ++ "' to bool."

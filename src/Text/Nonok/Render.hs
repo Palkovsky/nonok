@@ -41,7 +41,10 @@ feedFromFile state path = do
         setCurrentDirectory $ takeDirectory path
         result <- feed state contents
         setCurrentDirectory curDir
-        return result
+        case result of
+            (Left (RenderError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ err
+            (Left (ParsingError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ (show err)
+            _ -> return result
     else return $ Left $ RenderError $ "Unable to resolve path '" ++ path ++ "'."
 
 
@@ -89,7 +92,7 @@ renderFor var (FuncExpression name args) pieces = do
     expr <- evalExpr $ FuncExpression name args
     renderFor var expr pieces
 
-renderFor var _ pieces = throwE $ RenderError "not implemented yet"
+renderFor var _ pieces = throwE $ RenderError "Uniterable expression in for."
 
 renderDecl :: [(String, Expression)] -> Render ()
 renderDecl ((var, expr):xs) = do
@@ -113,7 +116,7 @@ renderIf (expr:xs) (pieces:ys) = do
         popFrame
     else renderIf xs ys
 renderIf [] [] = return ()
-renderIf _ _ = throwE $ RenderError "Unable to match expressions with blocks."
+renderIf _ _ = throwE $ RenderError "Unable to evaluate if blocks."
 
 mergedGlobals :: Maybe Expression -> Render VariableLookup
 mergedGlobals maybeMapExpr = do

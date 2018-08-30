@@ -230,9 +230,9 @@ callInFor = testCase "Call in for"
    (assertEqual "Should be parsed to valid AST"
       (Right [
           ForPiece "i"
-              (express [ expressInt 1
-                       , expressInt 2
-                       , expressInt 3])
+              (express [ express (1 :: Integer)
+                       , express (2 :: Integer)
+                       , express (3 :: Integer)])
               [StaticPiece " ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " "]])
       (generateAST "{{for $i in [1,2,3]}} {- $i}} {{endfor}}")
    )
@@ -241,7 +241,7 @@ parsingNestedFunctions :: TestTree
 parsingNestedFunctions = testCase "Passing reference to map in include"
  (assertEqual "Should be parsed to valid AST"
     (Right $ [CallPiece $ FuncExpression "f1"
-        [FuncExpression "f2" [express "x"], expressInt 12]])
+        [FuncExpression "f2" [express "x"], express (12 :: Integer)]])
     (generateAST "{- f1(f2('x'), 12) }}")
  )
 
@@ -249,9 +249,9 @@ parsingNestedFunctions = testCase "Passing reference to map in include"
 callAfterLet :: TestTree
 callAfterLet = testCase "Call after let"
   (assertEqual "Should be parsed to valid AST"
-     (Right [ Decl [("i", expressFloat 32.4),("j", express "xxx")]
+     (Right [ Decl [("i", express (32 :: Integer)),("j", express "xxx")]
             , StaticPiece " I'm ", CallPiece (LiteralExpression $ LitRef $ RefLocal "i"), StaticPiece " years old. "])
-     (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- $i}} years old. ")
+     (generateAST "{{let $i=32, $j='xxx'}} I'm {- $i}} years old. ")
   )
 
 callForMapMember :: TestTree
@@ -259,7 +259,7 @@ callForMapMember = testCase "Call for map member"
   (assertEqual "Should be parsed to valid AST"
      (Right
          [ Decl [("m", express $ M.fromList
-             [ ("age", expressInt 21), ("name", express "dawid")
+             [ ("age", express (21 :: Integer)), ("name", express "dawid")
              , ("pet", express $ M.fromList [("name", express "Azor")])])]
          , StaticPiece " "
          , CallPiece (MapMemberExpression (RefLocal "m") ["pet","name"])])
@@ -269,9 +269,9 @@ callForMapMember = testCase "Call for map member"
 callForGlobalVar :: TestTree
 callForGlobalVar = testCase "Call for global variable"
   (assertEqual "Should be parsed to valid AST"
-     (Right [ Decl [("i", expressFloat 32.4),("j", express "xxx")]
+     (Right [ Decl [("i", express (32 :: Integer)),("j", express "xxx")]
             , StaticPiece " I'm ", CallPiece (MapMemberExpression (RefGlobal "person") ["name"]), StaticPiece " years old. "])
-     (generateAST "{{let $i=32.4, $j='xxx'}} I'm {- @person.name }} years old. ")
+     (generateAST "{{let $i=32, $j='xxx'}} I'm {- @person.name }} years old. ")
   )
 
 {-

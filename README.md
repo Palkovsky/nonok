@@ -95,7 +95,6 @@ All displaying is done in `{- _ }}`. This tag simply evaluates passed expression
 #### Literals
 
 * integer `(2, -1, 0, 5124)`
-* float `(0.0, -2.324, 4.5)`
 * bool `(True, False)`
 * string `('', 'wololo', 'x')`
 
