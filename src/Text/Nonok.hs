@@ -3,7 +3,7 @@ module Text.Nonok
     , newFunc
 
     , defaultRenderState
-    , initialRenderState
+    , newRenderState
     , noGlobals
     , getState
     , putState

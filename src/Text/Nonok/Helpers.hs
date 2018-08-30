@@ -26,8 +26,10 @@ defaultRenderState = RenderState { localVars=M.empty
                                  , scopeStack=[S.empty]
                                  , functions = defaultFunctions}
 
-initialRenderState :: VariableLookup -> RenderState
-initialRenderState globals =  defaultRenderState {globalVars = globals}
+
+newRenderState :: VariableLookup -> FunctionStore -> RenderState
+newRenderState globals funcs =  defaultRenderState {globalVars = globals, functions = funcs}
+
 
 noGlobals :: VariableLookup
 noGlobals = M.empty

@@ -97,19 +97,19 @@ genResponse nav content = buildVarLookup $ do {content; addVar "nav" nav}
 generatePost :: Post -> IO ()
 generatePost post = do
     let globals = genResponse "post" $ genPostSingle post
-    result <- feedFromFile (initialRenderState globals) "layout/partials/post.html"
+    result <- feedFromFile (newRenderState globals defaultFunctions) "layout/partials/post.html"
     eitherM (throwIO . userError . show) (TIO.writeFile ("generated/blog/" ++ (T.unpack $ slug post) ++ ".html")) result
 
 generateListing :: [Post] -> IO ()
 generateListing posts = do
     let globals =  genResponse "list" $ genPostList posts
-    result <- feedFromFile (initialRenderState globals) "layout/listing.html"
+    result <- feedFromFile (newRenderState globals defaultFunctions) "layout/listing.html"
     eitherM (throwIO . userError . show) (TIO.writeFile "generated/listing.html") result
 
 generateFrontpage :: IO ()
 generateFrontpage = do
   let globals = genResponse "index" $ return ()
-  result <- feedFromFile (initialRenderState globals) "layout/index.html"
+  result <- feedFromFile (newRenderState globals defaultFunctions) "layout/index.html"
   eitherM (throwIO . userError . show) (TIO.writeFile "generated/index.html") result
 
 generateBlog :: IO ()

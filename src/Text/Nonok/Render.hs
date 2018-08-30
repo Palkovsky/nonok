@@ -3,6 +3,8 @@ module Text.Nonok.Render where
 import Text.Nonok.Types
 import Text.Nonok.Parser (generateAST)
 import Text.Nonok.Helpers
+import Text.Nonok.Functions (defaultFunctions)
+
 
 import Control.Monad.Identity
 import Control.Monad.Trans.State
@@ -24,11 +26,14 @@ import Data.Map.Merge.Strict (merge, preserveMissing, zipWithMatched)
 feed :: RenderState -> T.Text -> IO (Either RenderError T.Text)
 feed state text =
     case generateAST (T.unpack text) of
-        Left err  -> return $ Left $ ParsingError err
+        Left err  -> return $ Left $ RenderError $ show err
         Right ast -> do
             (e, builder) <- runRenderer state $ render ast
-            let rendered = LT.toStrict $ B.toLazyText builder
-            return $ case e of {Left err -> Left err; Right _ -> Right rendered}
+            return $
+              case e of
+                  (Left (RenderError err)) ->  Left $ RenderError err
+                  (Left (ParsingError err)) -> Left $ RenderError $ show err
+                  _ -> Right $ LT.toStrict $ B.toLazyText builder
 
 feedFromFile :: RenderState -> FilePath -> IO (Either RenderError T.Text)
 feedFromFile state path = do
@@ -130,7 +135,7 @@ renderIncludeRef ref maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
     expr <- evalLiteral $ LitRef ref
     let str = T.pack $ show $ PrintableExpression expr
-    result <- liftIO $ feed (initialRenderState newGlobals) str
+    result <- liftIO $ feed (newRenderState newGlobals defaultFunctions) str
     case result of
         (Left err) -> throwE err
         (Right rendered) -> writeText rendered
@@ -138,7 +143,7 @@ renderIncludeRef ref maybeMapExpr = do
 renderIncludePath :: String -> Maybe Expression -> Render ()
 renderIncludePath path maybeMapExpr = do
     newGlobals <- mergedGlobals maybeMapExpr
-    result <- liftIO $ feedFromFile (initialRenderState newGlobals) path
+    result <- liftIO $ feedFromFile (newRenderState newGlobals defaultFunctions) path
     case result of
         (Left err) -> throwE err
         (Right rendered) -> writeText rendered

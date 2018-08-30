@@ -145,7 +145,21 @@ Function is treated as an expression and is evaluated to some expression. Functi
 
 #### Adding custom functions
 
-I'll try to complete this readme in future.
+Nonok supports functions up to three parameters. All arguments must be of `Expression` type, and return value must be `Render Expression`. Let's implement reverse function for lists and strings.
+
+    -- Function implementation
+    reverseF :: Expression -> Render Expression
+    reverseF (ListExpression list) = return $ express $ reverse list
+    reverseF (LiteralExpression (LitString str)) = return $ express $ reverse str
+    reverseF _ = throwE $ RenderError "reverse: reverse accepts only lists and strings"
+
+
+    -- Adding it to our function store and creating new state
+    main :: IO ()
+    main = do
+        let functionsStore = newFunc "reverse" (FuncA1 reverseF) defaultFunctions
+            renderState = newRenderState noGlobals functionsStore
+        putStrLn $ show $ feed renderState $ T.pack "{- reverse([1, 2, 3]) }}"
 
 ## Examples
 

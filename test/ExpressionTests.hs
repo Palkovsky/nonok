@@ -22,7 +22,7 @@ genPeople :: [(String, Integer)] -> VariableLookup
 genPeople list = buildVarLookup $ addVar "people" $ map (\(name, age) -> genPerson name age) list
 
 testState :: RenderState
-testState = initialRenderState $ genPeople [("Mirek", 42), ("Michal", 50), ("Dawid", 12), ("Andrzej", 20)]
+testState = newRenderState (genPeople [("Mirek", 42), ("Michal", 50), ("Dawid", 12), ("Andrzej", 20)]) defaultFunctions
 
 expressions :: TestTree
 expressions = testGroup "Expressions"
@@ -43,7 +43,7 @@ mapWithGlobalVariableFields :: TestTree
 mapWithGlobalVariableFields = testCase ("Map with global variable fields" :: String)
   (assertEqualIO ("Should render valid output" :: String)
     (return $ Right "Name: David, age: 30")
-    (feed (initialRenderState $ M.fromList [("age", express (30 :: Integer))])
+    (feed (newRenderState (M.fromList [("age", express (30 :: Integer))]) defaultFunctions)
      "{{let $age=21, $n='David', $person={'name' : $n, 'age' : @age}}}Name: {- $person.name }}, age: {- $person.age }}")
   )
 

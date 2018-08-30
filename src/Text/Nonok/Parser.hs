@@ -76,12 +76,6 @@ parseRefExpression = parseReference >>= (return . LiteralExpression . LitRef)
 tag :: Parser a -> Parser a
 tag p = between (tagStart >> spaces) (spaces >> tagEnd) p <?> "Tag"
 
-parseFloat :: Parser Double
-parseFloat = do sign <- option 1 (do s <- oneOf "+-"
-                                     return $ if s == '-' then-1.0 else 1.0)
-                x  <- P.float $ P.makeTokenParser emptyDef
-                return $ sign * x
-
 parseInt :: Parser Integer
 parseInt = do sign <- option 1 (do s <- oneOf "+-"
                                    return $ if s == '-' then-1 else 1)

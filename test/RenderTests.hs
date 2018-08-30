@@ -141,8 +141,8 @@ renderIncludeGlobalInheritance :: TestTree
 renderIncludeGlobalInheritance = testCase "Inheriting global variables in includes"
   (assertEqualIO "Should render valid output"
      (return $ Right "andrzej inner: andrzej")
-     (feed (initialRenderState $  M.fromList [(("person" :: String), express $ M.fromList
-         [(("name" :: String), express ("andrzej" :: String))])])
+     (feed (newRenderState (M.fromList [(("person" :: String), express $ M.fromList
+         [(("name" :: String), express ("andrzej" :: String))])]) defaultFunctions)
       "{{let $i='{-@person.name}}'}}{{include $i}} inner: {-@person.name}}")
   )
 
@@ -164,8 +164,8 @@ renderIncludeRefWithOverwrittenGlobal :: TestTree
 renderIncludeRefWithOverwrittenGlobal = testCase "Overriding old global in ref include"
  (assertEqualIO "Should render valid output"
     (return $ Right "dawid inner: andrzej")
-    (feed (initialRenderState $  M.fromList [(("person" :: String), express $ M.fromList
-        [(("name" :: String), express ("andrzej" :: String))])])
+    (feed (newRenderState (M.fromList [(("person" :: String), express $ M.fromList
+        [(("name" :: String), express ("andrzej" :: String))])]) defaultFunctions)
      "{{let $i='{-@person.name}}'}}{{include $i, {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
  )
 
@@ -173,7 +173,7 @@ renderIncludePathWithOverwrittenGlobal :: TestTree
 renderIncludePathWithOverwrittenGlobal = testCase "Overriding old global in path include"
     (assertEqualIO "Should render valid output"
         (return $ Right "dawid\n inner: andrzej")
-        (feed (initialRenderState $  M.fromList [(("person" :: String), express $ M.fromList [(("name" :: String), express ("andrzej" :: String))])])
+        (feed (newRenderState (M.fromList [(("person" :: String), express $ M.fromList [(("name" :: String), express ("andrzej" :: String))])]) defaultFunctions)
         "{{include 'test/static/include_test_override.txt', {'person' : {'name':'dawid'}} }} inner: {-@person.name}}")
     )
 
