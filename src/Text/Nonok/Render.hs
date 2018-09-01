@@ -37,22 +37,21 @@ feed state text =
 
 feedFromFile :: RenderState -> FilePath -> IO (Either RenderError T.Text)
 feedFromFile state path = do
-    let base = baseDir state
-        relPath = base </> path
-        newState =  state { baseDir = takeDirectory relPath }
-    exists <- doesFileExist relPath
+    -- replace '.' with absolute path to make it more thread safe
+    base <- case baseDir state of {"." -> getCurrentDirectory; x -> return x}
+    let templatePath = base </> path
+        newState =  state { baseDir = takeDirectory templatePath }
+    exists <- doesFileExist templatePath
+
     if exists
     then do
-
-        contents <- TIO.readFile relPath
+        contents <- TIO.readFile templatePath
         result <- feed newState contents
-
         case result of
             (Left (RenderError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ err
             (Left (ParsingError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ (show err)
             _ -> return result
-
-    else return $ Left $ RenderError $ "Unable to resolve path '" ++ relPath ++ "'."
+    else return $ Left $ RenderError $ "Unable to resolve path '" ++ templatePath ++ "'."
 
 render :: [Piece] -> Render ()
 render ((ExtendsPiece path):xs) = renderExtends path xs --if it's extended. give render control to parent
