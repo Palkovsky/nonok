@@ -1,6 +1,6 @@
 # nonok-blog
 
-Static blog generator based on nonok.
+Sample static blog generator based on nonok.
 
 ## File structure
 
@@ -9,3 +9,11 @@ Static blog generator based on nonok.
 ## Usage
 
 `stack build && stack exec nonok-blog-exe`
+
+## Screens
+
+#### Listing page
+![listing](1.png)
+
+#### Post page
+![post](2.png)

@@ -13,7 +13,7 @@ import Control.Monad.Trans.Writer
 import Control.Monad.IO.Class (liftIO)
 
 import System.Directory
-import System.FilePath (takeDirectory)
+import System.FilePath (takeDirectory, (</>))
 
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text as T
@@ -37,21 +37,22 @@ feed state text =
 
 feedFromFile :: RenderState -> FilePath -> IO (Either RenderError T.Text)
 feedFromFile state path = do
-    exists <- doesFileExist path
+    let base = baseDir state
+        relPath = base </> path
+        newState =  state { baseDir = takeDirectory relPath }
+    exists <- doesFileExist relPath
     if exists
     then do
-        curDir <- getCurrentDirectory
-        contents <- TIO.readFile path
-        -- this is not thread-safe, that's way some tests might fail
-        setCurrentDirectory $ takeDirectory path
-        result <- feed state contents
-        setCurrentDirectory curDir
+
+        contents <- TIO.readFile relPath
+        result <- feed newState contents
+
         case result of
             (Left (RenderError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ err
             (Left (ParsingError err)) -> return $ Left $ RenderError $ path ++ " -> " ++ (show err)
             _ -> return result
-    else return $ Left $ RenderError $ "Unable to resolve path '" ++ path ++ "'."
 
+    else return $ Left $ RenderError $ "Unable to resolve path '" ++ relPath ++ "'."
 
 render :: [Piece] -> Render ()
 render ((ExtendsPiece path):xs) = renderExtends path xs --if it's extended. give render control to parent
@@ -152,7 +153,7 @@ renderExtends :: String -> [Piece] -> Render ()
 renderExtends path ast = do
     let blocksMap = M.fromList $ overridenBlocks ast
     state <- getState
-    result <- liftIO $ feedFromFile (defaultRenderState {globalVars = (globalVars state), blocksLookup=blocksMap}) path
+    result <- liftIO $ feedFromFile (defaultRenderState {globalVars = (globalVars state), blocksLookup=blocksMap, baseDir=(baseDir state)}) path
     case result of
         (Left err) -> throwE err
         (Right rendered) -> writeText rendered

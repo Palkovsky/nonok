@@ -24,7 +24,8 @@ defaultRenderState = RenderState { localVars=M.empty
                                  , globalVars=M.empty
                                  , blocksLookup=M.empty
                                  , scopeStack=[S.empty]
-                                 , functions = defaultFunctions}
+                                 , functions = defaultFunctions
+                                 , baseDir = "."}
 
 
 newRenderState :: VariableLookup -> FunctionStore -> RenderState

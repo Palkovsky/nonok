@@ -34,7 +34,7 @@ data RenderState = RenderState { localVars :: VariableLookup
                                , blocksLookup :: BlocksLookup
                                , scopeStack :: ScopeStack
                                , functions :: FunctionStore
-                               }
+                               , baseDir :: FilePath}
 
 data RenderError = RenderError String
                  | ParsingError ParseError
