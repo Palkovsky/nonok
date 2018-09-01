@@ -13,7 +13,7 @@ Sample static blog generator based on nonok.
 ## Screens
 
 #### Listing page
-![listing](1.png)
+![listing](1.PNG)
 
 #### Post page
-![post](2.png)
+![post](2.PNG)
