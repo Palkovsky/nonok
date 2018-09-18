@@ -47,7 +47,7 @@ If we want to inherit from it, we just write:
         ...
     {{ endblock }}
 
-Thing to note is that extends must be in first line of your template. If renderer detects that you're extending other template, only block tags will be preserved. So anything you write outside `{{ block _ }} ... {{ endblock }}` will be ignored. You don't have to provide all blocks that are defined in parent template. Every block has its own scope.
+Thing to note is that extends must be in first line of your template. If renderer detects that you're extending other template, only block tags will be preserved. You don't have to provide all blocks that are defined in parent template. Every block has its own scope.
 
 #### For loops
 
