@@ -120,7 +120,7 @@ Most useful thing about list is that it can be loop through.
 
 ### Functions
 
-Function is treated as an expression and is evaluated to some expression. Functions are called in C-like syntax. Nonok supports functions 3-arity functions. They all run in in Render monad which is an IO monad on steriods (io, state, writer, except).
+Function is treated as an expression and is evaluated to some expression. Functions are called in C-like syntax. Nonok supports up to 3-arity functions. They all run in in Render monad which is an IO monad on steriods (io, state, writer, except).
 
 #### Examples:
 
